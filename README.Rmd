@@ -17,15 +17,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-### Plotting ATAC-seq footprints using PWMs
+### Plotting ATAC-seq footprints
 
-In this example, we will plot the Tn5 insertion signal around CTCF motifs in ATAC-seq peaks
+In this example, we will plot the Tn5 insertion signal around CTCF motifs in ATAC-seq peaks using a positional weight matrix (PWM).
 
 Get the CTCF motif
 ```{r, message=FALSE, comment=FALSE}
 library(JASPAR2014)
 library(TFBSTools)
-library(seqLogo)
+library(BSgenome.Mmusculus.UCSC.mm10)
 
 # Get the motif PWM
 ### Get the PWM data from the database and reformat for test functions
@@ -39,9 +39,32 @@ pwm_matrix_list <- Matrix(pwm_data)
 
 # Get mofif PWM for CTCF
 ctcf <- pwm_matrix_list$MA0139.1
-write.table(ctcf, "data/ctcf.pwm", quote = FALSE)
-
-
 ```
+
+Load the bed file of ATAC-seq peaks.
+```{r}
+peaks <- read_bed("~/polo_iPSC/ATACseq/processed_data/atac_peaks/atac_all_peaks_union.bed")
+```
+
+Read in the BAM and get insertion signal for regions.
+```{r}
+tn <- read_atac_bam_tn(bam_file = "~/Desktop/test.bam", yieldSize = 1e6, which=rgns)
+```
+
+Get the positions of motif in peaks.
+```{r}
+gr_motif <- motif_gr(gr = peaks, pwm = pwm, genome = Mmusculus)
+```
+
+## Get the distances from motif.
+```{r}
+dists <- atac_motif_dist(tn_signal_gr = tn, motif_pos_gr = gr_motif, range = 150)
+```
+
+Plot the footprint.
+```{r}
+plot_scaled_footprint(dists, window = 300, col='red', lwd=2, main="CTCF")
+```
+
 
 
