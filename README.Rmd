@@ -17,8 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-
-## Plotting ATAC-seq footprints using PWMs
+### Plotting ATAC-seq footprints using PWMs
 
 In this example, we will plot the Tn5 insertion signal around CTCF motifs in ATAC-seq peaks
 
@@ -40,7 +39,9 @@ pwm_matrix_list <- Matrix(pwm_data)
 
 # Get mofif PWM for CTCF
 ctcf <- pwm_matrix_list$MA0139.1
-rownames(ctcf) <- c("A", "C", "G", "T")
+write.table(ctcf, "data/ctcf.pwm", quote = FALSE)
+
+
 ```
 
 
