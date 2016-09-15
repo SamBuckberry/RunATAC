@@ -4,10 +4,12 @@
 \alias{read_atac_pos}
 \title{Read BAM file Tn5 insertion positions into GRanges object}
 \usage{
-read_atac_pos(bam_file)
+read_atac_pos(bam_file, yieldSize = 1e+05, ...)
 }
 \arguments{
 \item{bam_file}{Path to a BAM formatted file.}
+
+\item{regions_gr}{A GenomicRanges object of genomic regions of data to be retreived.}
 }
 \value{
 A GRanges object of Tn5 insertion positions

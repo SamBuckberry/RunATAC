@@ -49,23 +49,42 @@ read_atac_frags <- function(bam_file, max_insert=2000){
 #' tn <- import_atac_pos("test_100k.bam")
 #' }
 #' @export
-read_atac_pos <- function(bam_file){
+read_atac_pos <- function(bam_file, yieldSize=1e6, ...){
+
+        # Allow the setting of parameters for Bam file scan such as Which regions
+        param <- Rsamtools::ScanBamParam(...)
+
+        # Loop for reading the BAM file in chunks
+        bf <- Rsamtools::BamFile(file = bam_file, yieldSize = yieldSize)
+        open(bf)
+        gr <- NULL
+        repeat {
+                chunk <- GenomicAlignments::readGAlignments(bf, param = param)
+                if (length(chunk) == 0L)
+                        break
+                chunk_gr <- GenomicRanges::GRanges(chunk)
+                if (is.null(tn)) {
+                        gr <- chunk_gr
+                        } else {
+                                gr <- c(gr, chunk_gr)
+                        }
+        }
+        close(bf)
         
-        tn <- GenomicAlignments::readGAlignments(file = bam_file) %>%
-                GRanges()
-        
+        gr <- GRangesList(gr) %>% unlist()
+
         # Offset the reads to correspond to tn5 insertion site
-        pos <- tn[strand(tn) == "+"] %>% 
+        pos <- gr[strand(gr) == "+"] %>% 
                 GenomicRanges::shift(shift=4) %>%
                 GenomicRanges::resize(width = 2, fix = "start")
-        #strand(pos) <- "*"
         
-        neg <- tn[strand(tn) == "-"] %>%
+        neg <- gr[strand(gr) == "-"] %>%
                 GenomicRanges::shift(shift = -5) %>%
                 GenomicRanges::resize(width = 2, fix = "start")
-        #strand(neg) <- "*"
 
-        return(c(pos, neg))
+        # Return the pos and neg strands together
+        gr <- c(pos, neg)
+        return(gr)
 }
 
 
