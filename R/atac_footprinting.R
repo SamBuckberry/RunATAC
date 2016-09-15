@@ -122,18 +122,3 @@ plot_scaled_footprint <- function(tn_dist, window=200, ...){
              xlab="Distance to motif centre (bp)")
         }
 
-
-
-
-
-
-
-
-## Get the motif positions
-gr_motif <- motif_gr(gr = rgns, pwm = pwm, min.score = "85%", genome = Mmusculus)
-
-## Get the distances from motif
-dists <- atac_motif_dist(tn_signal_gr = tn, motif_pos_gr = gr_motif, range = 150)
-
-
-plot_scaled_footprint(dists, window = 300, col='red', lwd=2, main="CTCF")
