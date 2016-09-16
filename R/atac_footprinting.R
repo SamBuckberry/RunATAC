@@ -1,5 +1,5 @@
-
 #' Get the positions of the PWM in ATAC-seq peaks.
+#' 
 #' @param gr A GRanges object. Usually ranges of ATAC-seq peaks. 
 #' @param pwm A positional weight matrix of class Matirx.
 #' @param genome A BSgenome object. 
@@ -70,6 +70,7 @@ motif_gr <- function(gr, pwm, genome=Mmusculus, min.score="85%"){
 }
 
 #' Calculate distances of Tn5 insertions from motif.
+#' 
 #' @param tn_signal_gr A GRanges object with tn5 insertions. See the read_atac_bam_tn function.
 #' @param motif_pos_gr A GRanges object with the positions of the PWM in ATAC-seq peaks.
 #' @param range The distance in bases flanking the the motif to calculate signal.
