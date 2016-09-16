@@ -21,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 In this example, we will plot the Tn5 insertion signal around CTCF motifs in ATAC-seq peaks using a positional weight matrix (PWM).
 
-Get the CTCF motif
+Get the CTCF motif from the JASPAR database.
 ```{r, message=FALSE, comment=FALSE}
 library(JASPAR2014)
 library(TFBSTools)
