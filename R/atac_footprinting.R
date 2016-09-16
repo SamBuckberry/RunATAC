@@ -4,6 +4,18 @@
 #' @param pwm A positional weight matrix of class Matirx.
 #' @param genome A BSgenome object. 
 #' @param min.score Minimum alignment score for pwm. Default = "85%".
+#' @return A GRanges object with positions of PWM match in peaks.
+#' @export
+#' @importFrom magrittr %>%
+#' @import GenomicRanges
+#' @import IRanges
+#' @examples
+#' \dontrun{
+#' library(BSgenome.Mmusculus.UCSC.mm10)
+#' ctcf <- read.table("/data/ctcf.pwm") %>% as.matrix()
+#' peaks <- read_bed("/data/atac_peaks.bed")
+#' mpos <- motif_gr(peaks, ctcf, Mmusculus)
+#' }
 motif_gr <- function(gr, pwm, genome=Mmusculus, min.score="85%"){
         
         if(class(gr) != "GRanges"){
@@ -25,14 +37,14 @@ motif_gr <- function(gr, pwm, genome=Mmusculus, min.score="85%"){
         # Function to find motif in one sequence
         find_motif_start <- function(x)
         {
-                motif_starts <- matchPWM(pwm = pwm, subject = sequences[[x]],
+                motif_starts <- Biostrings::matchPWM(pwm = pwm, subject = sequences[[x]],
                                          min.score = min.score) %>% start()
                 starts <- start(gr[x]) + motif_starts
                 if (length(starts) == 0){
                         out <- NULL
                 } else {
                         ends <- starts + ncol(pwm)
-                        out <- GRanges(seqnames = seqnames(gr[x]),
+                        out <- GenomicRanges::GRanges(seqnames = seqnames(gr[x]),
                                        ranges = IRanges(start = starts,
                                                         end = ends))
                 }
@@ -58,16 +70,33 @@ motif_gr <- function(gr, pwm, genome=Mmusculus, min.score="85%"){
 }
 
 #' Calculate distances of Tn5 insertions from motif.
-#' @param genome Object of class BSgenome.
-#' @param tn_signal A GRanges object with tn5 insertions. See the read_atac_bam_tn function.
+#' @param tn_signal_gr A GRanges object with tn5 insertions. See the read_atac_bam_tn function.
+#' @param motif_pos_gr A GRanges object with the positions of the PWM in ATAC-seq peaks.
 #' @param range The distance in bases flanking the the motif to calculate signal.
+#' @return A numeric vector of distances of Tn5 insertion sites to motif centre.
+#' @export
+#' @importFrom magrittr %>%
+#' @import GenomicRanges
+#' @import IRanges
+#' @examples
+#' \dontrun{
+#' library(BSgenome.Mmusculus.UCSC.mm10)
+#' ctcf <- read.table("data/ctcf.pwm") %>% as.matrix()
+#' peaks <- read_bed("data/atac_peaks.bed")
+#' mpos <- motif_gr(gr, ctcf, Mmusculus)
+#' tn <- read_atac_bam_tn(bam_file = "data/atac.bam", yieldSize = 1e6, which=peaks)
+#' dists <- atac_motif_dist(tn, mpos)
+#' head(dists)
+#' }
 atac_motif_dist <- function(tn_signal_gr, motif_pos_gr, range=200){
 
         # Resize to range of signal collection
-        motif_pos_gr <- GenomicRanges::resize(motif_pos_gr, width = range*2, fix = 'center')
+        motif_pos_gr <- GenomicRanges::resize(motif_pos_gr, width = range*2,
+                                              fix = 'center')
         
         # Subset the Tn5 signal
-        tn_signal_gr <- tn_signal_gr[overlapsAny(query = tn_signal_gr, subject = motif_pos_gr)]
+        tn_signal_gr <- tn_signal_gr[IRanges::overlapsAny(query = tn_signal_gr,
+                                                          subject = motif_pos_gr)]
         
         #For each motif, get the distances of nearby Tn5 insertions
         get_tn_dist <- function(x){
@@ -76,7 +105,8 @@ atac_motif_dist <- function(tn_signal_gr, motif_pos_gr, range=200){
                 motif_pos <- motif_pos_gr[x]
                 
                 # Get the tn5 hits for range
-                tn_sub <- tn_signal_gr[overlapsAny(query = tn_signal_gr, subject = motif_pos)]
+                tn_sub <- tn_signal_gr[IRanges::overlapsAny(query = tn_signal_gr,
+                                                            subject = motif_pos)]
                 
                 # Calculate the relative distance to the motif centre for insertions
                 tn_dist <- (start(motif_pos) + range) - start(tn_sub)
@@ -103,6 +133,18 @@ atac_motif_dist <- function(tn_signal_gr, motif_pos_gr, range=200){
 #' See atac_motif_dist function.
 #' @param window The plotting window in bases. 
 #' @param ... Optional arguments passed to plot function.
+#' @return An ATAC-seq footprint plot in the current graphics device. No values are returned.
+#' @export
+#' @examples
+#' \dontrun{
+#' library(BSgenome.Mmusculus.UCSC.mm10)
+#' ctcf <- read.table("data/ctcf.pwm") %>% as.matrix()
+#' peaks <- read_bed("data/atac_peaks.bed")
+#' mpos <- motif_gr(gr, ctcf, Mmusculus)
+#' tn <- read_atac_bam_tn(bam_file = "data/atac.bam", yieldSize = 1e6, which=peaks)
+#' dists <- atac_motif_dist(tn, mpos)
+#' plot_scaled_footprint(dists)
+#' }
 plot_scaled_footprint <- function(tn_dist, window=200, ...){
         
         # Subset for window
