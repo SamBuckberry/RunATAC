@@ -14,6 +14,9 @@ read_atac_bam_tn <- function(bam_file, yieldSize=1e6, ...){
         # Allow the setting of parameters for Bam file scan such as Which regions
         param <- Rsamtools::ScanBamParam(...)
         
+        message("Processing BAM file. This this may take a while for large files...")
+        message("If you have lots of RAM, increase yieldSize to speed things up.")
+        
         # Loop for reading the BAM file in chunks
         bf <- Rsamtools::BamFile(file = bam_file, yieldSize = yieldSize)
         open(bf)
@@ -33,6 +36,8 @@ read_atac_bam_tn <- function(bam_file, yieldSize=1e6, ...){
         
         gr <- GRangesList(gr) %>% unlist()
         
+        message("Offsetting alignments to Tn5 integration site.")
+        
         # Offset the reads to correspond to tn5 insertion site
         pos <- gr[strand(gr) == "+"] %>% 
                 GenomicRanges::shift(shift=4) %>%
@@ -44,5 +49,8 @@ read_atac_bam_tn <- function(bam_file, yieldSize=1e6, ...){
         
         # Return the pos and neg strands together
         gr <- c(pos, neg)
+        
+        message("Done!")
+        
         return(gr)
 }
