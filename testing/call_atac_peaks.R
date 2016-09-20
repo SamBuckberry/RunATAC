@@ -25,7 +25,7 @@ length(atac_gr)
 # 
 # sp <- summarise.peaks(pks)
 
-bin_size <- 50
+bin_size <- 200
 assembly <- "mm10"
 blacklist <- read_bed("~/polo_iPSC/resources/mm10_blacklist_regions.bed")
 

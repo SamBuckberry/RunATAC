@@ -1,0 +1,18 @@
+---
+title: "TO DO"
+author: Sam Buckberry
+output:
+  md_document:
+    variant: markdown_github
+---
+
+### Processing functions
+
+
+### Plotting functions
+* Insert size histogram
+* V-plot heatmap
+* Nucleosome density plot analagous to the footprint plot
+* Footprint and nucleosome together
+* Heatmaps analagous to deeptools for TSS, Gene body, etc
+
