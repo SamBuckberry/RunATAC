@@ -23,9 +23,6 @@ read_bed <- function(bed_file){
         return(gr)
 }
 
-
-
-
 #' Read BAM file Tn5 insertion positions into GRanges object
 #' 
 #' @param bam_file Path to a BAM formatted file.
@@ -82,7 +79,6 @@ read_atac_bam_tn <- function(bam_file, yieldSize=1e6, ...){
         
         return(gr)
 }
-
 
 #' Get the positions of the PWM in ATAC-seq peaks.
 #' 
@@ -156,9 +152,13 @@ motif_gr <- function(gr, pwm, genome=Mmusculus, min.score="85%"){
 }
 
 
+library(magrittr)
+library(GenomicRanges)
+library(BSgenome.Mmusculus.UCSC.mm10)
+
 tn_signal_gr <- read_atac_bam_tn(bam_file = atac_bam)
 atac_peaks <- read_bed(atac_regions)
-atac_peaks <- atac_peaks[seqnames(atac_peaks) == "chr19"]
+#atac_peaks <- atac_peaks[seqnames(atac_peaks) == "chr19"]
 
 motif_pos_gr <- motif_gr(gr = atac_peaks, pwm = ctcf)
 
@@ -252,7 +252,7 @@ bias_correct_atac_motif <- function(tn_signal_gr, motif_pos_gr, bias_bigwig, ran
         
         # scale the insertions from 0-1
         range01 <- function(x, ...){(x - min(x, ...)) / (max(x, ...) - min(x, ...))}
-        results$insertions_scaled <- range01(result$insertions, na.rm = TRUE)
+        results$insertions_scaled <- range01(results$insertions, na.rm = TRUE)
         
         # Return results
         return(results)
@@ -289,7 +289,7 @@ plot_atac_footprint <- function(result, pwm = ctcf, main=""){
                            linetype = "longdash") +
                 xlab("Position relative to motif")
         
-        plot_grid(g1, g2, nrow = 2, ncol = 1, rel_heights = c(1,0.65), align = "v")
+        plot_grid(g1, g2, nrow = 2, ncol = 1, rel_heights = c(1,0.55), align = "v")
         
 }
 
@@ -302,7 +302,7 @@ os_pwm <- pwm_matrix_list$MA0142.1
 
 
 oct_peaks <- read_bed("~/polo_iPSC/ChIPseq/processed_data/macs_peaks_replicates/ips_oct_peaks.narrowPeak")
-oct_peaks <- oct_peaks[seqnames(oct_peaks) == "chr19"]
+#oct_peaks <- oct_peaks[seqnames(oct_peaks) == "chr19"]
 
 motif_pos_os <- motif_gr(gr = oct_peaks, pwm = os_pwm, min.score = "75%")
 result_os <- bias_correct_atac_motif(tn_signal_gr = tn_signal_gr, motif_pos_gr = motif_pos_os,
