@@ -2,7 +2,7 @@
 
 bias_bigwig <- "~/Desktop/mm10_bias_chr19.Scores.bigwig"
 atac_regions <- "~/polo_iPSC/ATACseq/processed_data/atac_peaks/atac_all_peaks_union.bed"
-atac_bam <- "~/Desktop/test.bam"
+atac_bam <- "~/Desktop/atac_iPSC_combined_replicates_chr19.bam"
 ctcf <- read.table("~/R_packages/RunATAC/inst/exdata/ctcf.pwm") %>% as.matrix()
 
 #' Read BED formatted file to GRanges object
@@ -162,7 +162,7 @@ atac_peaks <- atac_peaks[seqnames(atac_peaks) == "chr19"]
 
 motif_pos_gr <- motif_gr(gr = atac_peaks, pwm = ctcf)
 
-bias_correct_atac_motif <- function(tn_signal_gr, motif_pos_gr, bias_bigwig, range=200){
+bias_correct_atac_motif <- function(tn_signal_gr, motif_pos_gr, bias_bigwig, range=100){
         
         # Resize to range of signal collection
         motif_pos_gr <- GenomicRanges::resize(motif_pos_gr, width = range*2,
@@ -250,12 +250,65 @@ bias_correct_atac_motif <- function(tn_signal_gr, motif_pos_gr, bias_bigwig, ran
         # sort the results
         results <- results[order(results$rel_pos, decreasing = FALSE), ]
         
+        # scale the insertions from 0-1
+        range01 <- function(x, ...){(x - min(x, ...)) / (max(x, ...) - min(x, ...))}
+        results$insertions_scaled <- range01(result$insertions, na.rm = TRUE)
+        
         # Return results
         return(results)
 
 }
 
 
-
 result <- bias_correct_atac_motif(tn_signal_gr, motif_pos_gr, bias_bigwig)
+
+library(caret)
+library(cowplot)
+
+plot_atac_footprint <- function(result, pwm = ctcf, main=""){
+        
+        # Get motif size and distances
+        motif_size <- ncol(pwm)
+        motif_size <- round(motif_size/2)*2 # round up to even number
+        motif_dist <- c(0-motif_size/2, 0+motif_size/2)
+        
+        g1 <- ggplot2::ggplot(result, aes(x = rel_pos, y = insertions_scaled)) +
+                geom_line(size=1, col='black') +
+                ylab("Fraction of\n insertion signal") +
+                xlab("") +
+                geom_vline(xintercept = motif_dist, colour="grey",
+                           linetype = "longdash") +
+                theme(axis.text.x = element_blank()) +
+                ggtitle(main)
+        
+        
+        g2 <- ggplot2::ggplot(result, aes(x = rel_pos, y = bias_mean)) +
+                geom_line(size=1, col='black') +
+                ylab("Insertion\nbias") +
+                geom_vline(xintercept = motif_dist, colour="grey",
+                           linetype = "longdash") +
+                xlab("Position relative to motif")
+        
+        plot_grid(g1, g2, nrow = 2, ncol = 1, rel_heights = c(1,0.65), align = "v")
+        
+}
+
+plot_atac_footprint(result = result, pwm = ctcf, main = "CTCF")
+
+load(file = "~/polo_iPSC/resources/pwm_matrix_list.Rda")
+
+# Get mofif PWM for Oct4-Sox2
+os_pwm <- pwm_matrix_list$MA0142.1
+
+
+oct_peaks <- read_bed("~/polo_iPSC/ChIPseq/processed_data/macs_peaks_replicates/ips_oct_peaks.narrowPeak")
+oct_peaks <- oct_peaks[seqnames(oct_peaks) == "chr19"]
+
+motif_pos_os <- motif_gr(gr = oct_peaks, pwm = os_pwm, min.score = "75%")
+result_os <- bias_correct_atac_motif(tn_signal_gr = tn_signal_gr, motif_pos_gr = motif_pos_os,
+                                     bias_bigwig = bias_bigwig)
+
+plot_atac_footprint(result = result_os, pwm = ctcf, main = "Oct4-Sox2")
+
+plot(result$rel_pos, result$insertions_scaled / result$bias_scaled, type="l")
 
