@@ -158,11 +158,11 @@ library(BSgenome.Mmusculus.UCSC.mm10)
 
 tn_signal_gr <- read_atac_bam_tn(bam_file = atac_bam)
 atac_peaks <- read_bed(atac_regions)
-#atac_peaks <- atac_peaks[seqnames(atac_peaks) == "chr19"]
+atac_peaks <- atac_peaks[seqnames(atac_peaks) == "chr19"]
 
 motif_pos_gr <- motif_gr(gr = atac_peaks, pwm = ctcf)
 
-bias_correct_atac_motif <- function(tn_signal_gr, motif_pos_gr, bias_bigwig, range=100){
+#bias_correct_atac_motif <- function(tn_signal_gr, motif_pos_gr, bias_bigwig, range=100){
         
         # Resize to range of signal collection
         motif_pos_gr <- GenomicRanges::resize(motif_pos_gr, width = range*2,
@@ -260,40 +260,168 @@ bias_correct_atac_motif <- function(tn_signal_gr, motif_pos_gr, bias_bigwig, ran
 }
 
 
-result <- bias_correct_atac_motif(tn_signal_gr, motif_pos_gr, bias_bigwig)
+bias_correct_transform_atac_motif <- function(tn_signal_gr, motif_pos_gr, bias_bigwig, range=100){
+        
+        # Resize to range of signal collection
+        motif_pos_gr <- GenomicRanges::resize(motif_pos_gr, width = range*2,
+                                              fix = 'center')
+        
+        # Compute bias signal -----------------------------------------------------
+        
+        # Get the bias signal for regions
+        bias <- rtracklayer::import(con = bias_bigwig, format = "Bigwig",
+                                    which=motif_pos_gr)
+        
+        # Transform scores 
+        bias$score <- exp(bias$score)
+        
+        get_bias_scores <- function(x){
+                
+                # Subset to one region
+                motif_pos <- motif_pos_gr[x]
+                
+                # Get the bias calculation for range
+                bias_sub <- bias[IRanges::overlapsAny(query = bias,
+                                                      subject = motif_pos)]
+                
+                # Calculate the relative distance to the motif centre for insertions
+                bias_dist <- (start(motif_pos) + range) - start(bias_sub)
+                
+                # Get bias scores for relative position
+                df <- data.frame(rel_pos=bias_dist, bias_score=bias_sub$score)
+                
+                return(df)
+                
+        }
+        
+        message("Calculating Tn5 insertion bias scores...")
+        bias_scores <- lapply(1:length(motif_pos_gr), get_bias_scores)
+        bias_scores <- do.call(rbind, bias_scores)
+        
+        # Get aggregate bias signal
+        bias_mean <- bias_scores %>%
+                group_by(rel_pos) %>%
+                summarise(yy=sum(bias_score))
+        
+        colnames(bias_mean) <- c("rel_pos", "bias_aggregate")
+        
+        # Compute Tn5 signal -----------------------------------------------------
+        
+        # Subset the Tn5 signal
+        tn_signal_gr <- tn_signal_gr[IRanges::overlapsAny(query = tn_signal_gr,
+                                                          subject = motif_pos_gr)]
+        
+        #For each motif region, get the distances of nearby Tn5 insertions
+        get_tn_dist <- function(x){
+                
+                # Subset to one region
+                motif_pos <- motif_pos_gr[x]
+                
+                # Get the tn5 hits for range
+                tn_sub <- tn_signal_gr[IRanges::overlapsAny(query = tn_signal_gr,
+                                                            subject = motif_pos)]
+                
+                # Calculate the relative distance to the motif centre for insertions
+                tn_dist <- (start(motif_pos) + range) - start(tn_sub)
+                
+                # Check if no Tn5 insertion events at position
+                if(length(tn_dist) < 1){
+                        tn_dist <- NA
+                }
+                
+                return(tn_dist)
+        }
+        
+        # Apply the function over all motif positions
+        dists <- lapply(1:length(motif_pos_gr), get_tn_dist)
+        dists <- dists[!is.na(dists)] %>% unlist()
+        
+        # Calculate the histogram
+        hist_dists <- table(dists) %>% data.frame()
+        
+        colnames(hist_dists) <- c("rel_pos", "insertions")
+        
+        # Merge insertion frequency with bias 
+        results <- merge.data.frame(bias_mean, hist_dists,
+                                    by = "rel_pos", all = TRUE)
+        
+        results$rel_pos <- as.character(results$rel_pos) %>% as.numeric()
+        results$bias_aggregate <- as.character(results$bias_aggregate) %>% as.numeric()
+        results$insertions <- as.character(results$insertions) %>% as.numeric()
+        
+        results$norm <- results$insertions / results$bias_aggregate
+        
+        # sort the results
+        results <- results[order(results$rel_pos, decreasing = FALSE), ]
+        
+        # scale the insertions from 0-1
+#         range01 <- function(x, ...){(x - min(x, ...)) / (max(x, ...) - min(x, ...))}
+#         results$insertions_scaled <- range01(results$insertions, na.rm = TRUE)
+#         results$bias_scaled <- range01(results$bias_aggregate, na.rm = TRUE)
+#         
+#         results$normalised <- results$insertions / results$bias
+        # Return results
+        return(results)
+        
+}
 
+
+library(dplyr)
+#result <- bias_correct_atac_motif(tn_signal_gr, motif_pos_gr, bias_bigwig)
+result <- bias_correct_transform_atac_motif(tn_signal_gr, motif_pos_gr, bias_bigwig)
 library(caret)
 library(cowplot)
+# 
+# plot_atac_footprint <- function(result, pwm = ctcf, main=""){
+#         
+#         # Get motif size and distances
+#         motif_size <- ncol(pwm)
+#         motif_size <- round(motif_size/2)*2 # round up to even number
+#         motif_dist <- c(0-motif_size/2, 0+motif_size/2)
+#         
+#         g1 <- ggplot2::ggplot(result, aes(x = rel_pos, y = norm)) +
+#                 geom_line(size=1, col='black') +
+#                 ylab("Fraction of\n insertion signal") +
+#                 xlab("") +
+#                 geom_vline(xintercept = motif_dist, colour="grey",
+#                            linetype = "longdash") +
+#                 theme(axis.text.x = element_blank()) +
+#                 ggtitle(main)
+#         
+#         
+#         g2 <- ggplot2::ggplot(result, aes(x = rel_pos, y = bias_mean)) +
+#                 geom_line(size=1, col='black') +
+#                 ylab("Insertion\nbias") +
+#                 geom_vline(xintercept = motif_dist, colour="grey",
+#                            linetype = "longdash") +
+#                 xlab("Position relative to motif")
+#         
+#         plot_grid(g1, g2, nrow = 2, ncol = 1, rel_heights = c(1,0.55), align = "v")
+#         
+# }
+# 
 
-plot_atac_footprint <- function(result, pwm = ctcf, main=""){
+plot_atac_normalised_footprint <- function(result, pwm = ctcf, main=""){
         
         # Get motif size and distances
         motif_size <- ncol(pwm)
         motif_size <- round(motif_size/2)*2 # round up to even number
         motif_dist <- c(0-motif_size/2, 0+motif_size/2)
         
-        g1 <- ggplot2::ggplot(result, aes(x = rel_pos, y = insertions_scaled)) +
+        g1 <- ggplot2::ggplot(result, aes(x = rel_pos, y = norm)) +
                 geom_line(size=1, col='black') +
-                ylab("Fraction of\n insertion signal") +
+                ylab("Insertion enrichment over bias") +
                 xlab("") +
                 geom_vline(xintercept = motif_dist, colour="grey",
                            linetype = "longdash") +
-                theme(axis.text.x = element_blank()) +
+                #theme(axis.text.x = element_blank()) +
                 ggtitle(main)
-        
-        
-        g2 <- ggplot2::ggplot(result, aes(x = rel_pos, y = bias_mean)) +
-                geom_line(size=1, col='black') +
-                ylab("Insertion\nbias") +
-                geom_vline(xintercept = motif_dist, colour="grey",
-                           linetype = "longdash") +
-                xlab("Position relative to motif")
-        
-        plot_grid(g1, g2, nrow = 2, ncol = 1, rel_heights = c(1,0.55), align = "v")
-        
+        return(g1)
 }
 
 plot_atac_footprint(result = result, pwm = ctcf, main = "CTCF")
+
+plot_atac_normalised_footprint(result = result, pwm = ctcf, main = "CTCF")
 
 load(file = "~/polo_iPSC/resources/pwm_matrix_list.Rda")
 
@@ -302,13 +430,13 @@ os_pwm <- pwm_matrix_list$MA0142.1
 
 
 oct_peaks <- read_bed("~/polo_iPSC/ChIPseq/processed_data/macs_peaks_replicates/ips_oct_peaks.narrowPeak")
-#oct_peaks <- oct_peaks[seqnames(oct_peaks) == "chr19"]
+oct_peaks <- oct_peaks[seqnames(oct_peaks) == "chr19"]
 
-motif_pos_os <- motif_gr(gr = oct_peaks, pwm = os_pwm, min.score = "75%")
-result_os <- bias_correct_atac_motif(tn_signal_gr = tn_signal_gr, motif_pos_gr = motif_pos_os,
-                                     bias_bigwig = bias_bigwig)
+motif_pos_gr <- motif_gr(gr = oct_peaks, pwm = os_pwm, min.score = "75%")
+result_os <- bias_correct_transform_atac_motif(tn_signal_gr = tn_signal_gr, motif_pos_gr = motif_pos_os,
+                                               range = 200, bias_bigwig = bias_bigwig)
 
-plot_atac_footprint(result = result_os, pwm = ctcf, main = "Oct4-Sox2")
+plot_atac_normalised_footprint(result = result_os, pwm = ctcf, main = "Oct4-Sox2")
 
 plot(result$rel_pos, result$insertions_scaled / result$bias_scaled, type="l")
 
