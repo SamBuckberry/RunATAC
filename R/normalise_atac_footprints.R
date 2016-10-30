@@ -96,10 +96,23 @@ motif_gr <- function(gr, pwm, genome=Mmusculus, min.score="85%"){
         return(motif_ranges)
 }
 
-atac_region_summary <- function(bigwig, regions, range=100, log=FALSE){
+
+#' Get the signal from bigwig file for defined regions.
+#' 
+#' @param bigwig Path to a bigwig file. Also accpets http paths. 
+#' @param gr A genomic ranges object of regions to obtain signal.
+#' @param range Integer. How many bases to flank the centre of the ranges. 
+#' @param log Logical. Is the signal in the bigwig file in log space? Default=FALSE.
+#' @return A data.frame of aggregate signal.
+#' @export
+#' @importFrom magrittr %>%
+#' @import GenomicRanges
+#' @import IRanges
+s
+atac_region_summary <- function(bigwig, gr, range=100, log=FALSE){
         
         # Resize to range of signal collection
-        region_gr <- GenomicRanges::resize(regions, width = range+(range+1), 
+        region_gr <- GenomicRanges::resize(gr, width = range+(range+1), 
                                            fix = 'center')
         
         # Compute bias signal -----------------------------------------------------
@@ -130,7 +143,7 @@ atac_region_summary <- function(bigwig, regions, range=100, log=FALSE){
 
 
 atac_sig  <- "~/Desktop/atac_iPSC_combined_replicates.ins.bigwig"
-atac_bias <- "~/Desktop/mm10_bias_chr19.Scores.bigwig"
+atac_bias <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/mm10_bias.Scores.bigwig"
 regions <- "~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_1.bed"
 tf <- read.table("~/R_packages/RunATAC/inst/exdata/ctcf.pwm") %>% as.matrix()
 
@@ -139,7 +152,7 @@ tf <- read.table("~/R_packages/RunATAC/inst/exdata/ctcf.pwm") %>% as.matrix()
 
 
 regions <- read_bed(regions) 
-regions <- regions[seqnames(regions) == "chr19"]
+#regions <- regions[seqnames(regions) == "chr19"]
 regions <-  motif_gr(regions, pwm = tf)
 
 ins <- atac_region_summary(bigwig = atac_sig, regions = regions, range = 150, log = FALSE)
@@ -155,18 +168,21 @@ load(file = "~/polo_iPSC/resources/pwm_matrix_list.Rda")
 # Get mofif PWM for Oct4-Sox2
 os_pwm <- pwm_matrix_list$MA0142.1
 
-regions <- ("~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_2.bed")
+regions <- ("~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_1.bed")
 regions <- read_bed(regions)
 reg_os <-  motif_gr(regions, pwm = os_pwm, min.score = "70%")
 
-ins <- atac_region_summary(bigwig = atac_sig, regions = reg_os, range = 300, log = FALSE)
-bias <- atac_region_summary(bigwig = atac_bias, regions = regions, range = 300, log = TRUE)
+ins <- atac_region_summary(bigwig = atac_sig, regions = reg_os, range = 400, log = FALSE)
+bias <- atac_region_summary(bigwig = atac_bias, regions = reg_os, range = 400, log = TRUE)
 
 plot(ins$position, ins$value, type='l')
 plot(bias$position, bias$value, type='l')
 
-plot(bias$position, ins$value / bias$value, type='l')
+plot(bias$position[abs(bias$position) < 200], ins$value[abs(ins$position) < 200] / bias$value[abs(bias$position) < 200], type='l')
 
 test <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/atac_iPSC_combined_replicates.bigwig"
+
+bias_bw <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/mm10_bias.Scores.bigwig"
+bias_os <- atac_region_summary(bigwig = bias_bw, regions = reg_os, range = 300, log = TRUE)
 
 ins <- atac_region_summary(bigwig = test, regions = reg_os, range = 300, log = FALSE)
