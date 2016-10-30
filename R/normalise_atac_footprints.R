@@ -167,5 +167,6 @@ plot(bias$position, bias$value, type='l')
 
 plot(bias$position, ins$value / bias$value, type='l')
 
+test <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/atac_iPSC_combined_replicates.bigwig"
 
-
+ins <- atac_region_summary(bigwig = test, regions = reg_os, range = 300, log = FALSE)
