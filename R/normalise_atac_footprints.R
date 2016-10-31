@@ -100,23 +100,24 @@ motif_gr <- function(gr, pwm, genome=Mmusculus, min.score="85%"){
 #' Get the signal from bigwig file for defined regions.
 #' 
 #' @param bigwig Path to a bigwig file. Also accpets http paths. 
-#' @param gr A genomic ranges object of regions to obtain signal.
-#' @param range Integer. How many bases to flank the centre of the ranges. 
+#' @param gr A genomic ranges object of regions to obtain signal. All ranges should be the same width.
+#' @param range The distance from the centre of gr to flank. Default=100. 
 #' @param log Logical. Is the signal in the bigwig file in log space? Default=FALSE.
-#' @return A data.frame of aggregate signal.
+#' If log = TRUE, the scores in the bigwig file are transformed by e^scores.
+#' @return A numeric vector of aggregate signal if aggregate = TRUE, which is the default. 
+#' If aggregate = FALSE a data.frame of signal of all regions is returned.
 #' @export
-#' @importFrom magrittr %>%
+#' @import magrittr
 #' @import GenomicRanges
 #' @import IRanges
-s
-atac_region_summary <- function(bigwig, gr, range=100, log=FALSE){
+#' @import tidyr
+#' @import rtracklayer
+range_summary <- function(bigwig, gr, range=100, log=FALSE, aggregate=TRUE){
         
-        # Resize to range of signal collection
+        # Make all GRanges same width by fixing centre
         region_gr <- GenomicRanges::resize(gr, width = range+(range+1), 
                                            fix = 'center')
-        
-        # Compute bias signal -----------------------------------------------------
-        
+
         # Get the signal for each base for the defined regions
         # Reurns a SimpleNumericList
         scores <- rtracklayer::import(con = bigwig, format = "Bigwig",
@@ -127,20 +128,33 @@ atac_region_summary <- function(bigwig, gr, range=100, log=FALSE){
                 scores <- exp(scores)
         }
         
+        # Reformat to data.frame
         scores <- as.data.frame(scores)
         
         # Set the relative postion
         range_intervals <- (0-range):(0+range)
-        scores$position <- rep(range_intervals, times=length(unique(scores$group)))
+        scores$position <- rep(range_intervals,
+                               times=length(unique(scores$group)))
         
-        scores <- scores[ ,c(4,3)]
+        # Drop the group_name
+        scores$group_name <- NULL
         
-        agg_scores <- aggregate(. ~ position, scores, sum)
+        # Reformat data into matrix
+        scores <- tidyr::spread(scores, key = position, value = value)
+        rownames(scores) <- scores$group
+        scores$group <- NULL
         
-        return(agg_scores)
+        # Aggregate scores if aggregate=TRUE
+        if(aggregate == TRUE){
+                scores <- colSums(scores)
+                rel_pos <- names(scores) %>% as.character %>% as.numeric()
+                scores <- data.frame(position=rel_pos,
+                                     signal=scores)
+                rownames(scores) <- NULL
+        }
+        
+        return(scores)
 }
-
-
 
 atac_sig  <- "~/Desktop/atac_iPSC_combined_replicates.ins.bigwig"
 atac_bias <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/mm10_bias.Scores.bigwig"
@@ -153,15 +167,21 @@ tf <- read.table("~/R_packages/RunATAC/inst/exdata/ctcf.pwm") %>% as.matrix()
 
 regions <- read_bed(regions) 
 #regions <- regions[seqnames(regions) == "chr19"]
-regions <-  motif_gr(regions, pwm = tf)
+regions_tf <-  motif_gr(regions, pwm = tf)
 
-ins <- atac_region_summary(bigwig = atac_sig, regions = regions, range = 150, log = FALSE)
-bias <- atac_region_summary(bigwig = atac_bias, regions = regions, range = 150, log = TRUE)
+ins <- range_summary(bigwig = atac_sig, gr = regions_tf, range = 150, log = FALSE)
+bias <- range_summary(bigwig = atac_bias, gr = regions_tf, range = 150, log = TRUE)
 
-plot(ins$position, ins$value, type='l')
-plot(bias$position, bias$value, type='l')
+ins_full <- range_summary(bigwig = atac_sig, gr = regions_tf, range = 150,
+                          log = FALSE, aggregate = FALSE)
+bias_full <- range_summary(bigwig = atac_bias, gr = regions_tf, range = 150,
+                           log = TRUE, aggregate = FALSE)
 
-plot(bias$position, ins$value / bias$value, type='l')
+
+plot(ins$position, ins$signal, type='l')
+plot(bias$position, bias$signal, type='l')
+
+plot(bias$position, ins$signal / bias$signal, type='l')
 
 
 load(file = "~/polo_iPSC/resources/pwm_matrix_list.Rda")
@@ -172,17 +192,89 @@ regions <- ("~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks
 regions <- read_bed(regions)
 reg_os <-  motif_gr(regions, pwm = os_pwm, min.score = "70%")
 
-ins <- atac_region_summary(bigwig = atac_sig, regions = reg_os, range = 400, log = FALSE)
-bias <- atac_region_summary(bigwig = atac_bias, regions = reg_os, range = 400, log = TRUE)
+ins <- range_summary(bigwig = atac_sig, gr = reg_os, range = 150, log = FALSE, aggregate = FALSE)
+bias <- range_summary(bigwig = atac_bias, gr = reg_os, range = 150, log = TRUE, aggregate = FALSE)
+nuc_sig <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/atac_d12_combined_replicates.nucleoatac_signal.bigwig"
+nuc <- range_summary(bigwig = nuc_sig, gr = reg_os, range = 500, aggregate = FALSE)
+o_sig <- range_summary(bigwig = "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/chip_seq/ips_oct_subtract.bw",
+                       gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
+s_sig <- range_summary(bigwig = "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/chip_seq/ips_sox_subtract.bw",
+                       gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
 
-plot(ins$position, ins$value, type='l')
-plot(bias$position, bias$value, type='l')
+mc <- range_summary(bigwig = "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/methylCseq/mmiPS_6__p1GFPpos.CG.level.unstranded.bigwig",
+                     gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
 
-plot(bias$position[abs(bias$position) < 200], ins$value[abs(ins$position) < 200] / bias$value[abs(bias$position) < 200], type='l')
+# Normalise insertions by bias signal
+ins_over_bias <- ins  / bias
 
-test <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/atac_iPSC_combined_replicates.bigwig"
 
-bias_bw <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/mm10_bias.Scores.bigwig"
-bias_os <- atac_region_summary(bigwig = bias_bw, regions = reg_os, range = 300, log = TRUE)
+## Get the nuc occupancy class
+occ <- range_summary(bigwig = "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/atac_d12_combined_replicates.occ.bigwig",
+                     gr = reg_os, range = 10, log = FALSE, aggregate = FALSE)
 
-ins <- atac_region_summary(bigwig = test, regions = reg_os, range = 300, log = FALSE)
+occ_means <- rowMeans(occ)
+
+set_occ_class <- function(x){
+        
+        dat <- NULL
+        
+        if (x < 0.1) {
+                dat <- "A"
+        } else if (x >= 0.1 & x < 0.3) {
+                dat <- "B" 
+        } else if (x >= 0.3 & x < 0.5) {
+                dat <- "C"
+        } else if (x > 0.5) { 
+                dat <- "D"
+        }
+        
+        return(dat)
+}
+
+occ_class <- lapply(occ_means, set_occ_class) %>% unlist()
+
+
+facet_plot_occ_class <- function(dat, occ_class, y_lab=""){
+        
+        # set the occ class
+        dat$class <- occ_class
+        
+        dat_melt <- melt(dat, id.vars = c('class'))
+        
+        dat_mean <- dat_melt %>%
+                group_by(variable, class) %>%
+                summarise(yy=mean(value))
+        
+        dat_mean$variable <- as.character(dat_mean$variable) %>% as.numeric()
+        dash <- 0
+        ggplot(dat_mean, aes(x = variable, y = yy, group=class)) +
+                geom_line() +
+                facet_grid(class~.) +
+                ylab(y_lab) +
+                xlab("Position relative to motif") +
+                theme_bw() +
+                theme(plot.background = element_blank(),
+                      panel.grid.minor = element_blank(),
+                      panel.border = element_blank(),
+                      axis.text = element_text(color = 'black'),
+                      axis.line = element_line(),
+                      #text = element_text(size=8),
+                      axis.line.x = element_line(color = 'black'),
+                      axis.line.y = element_line(color = 'black'))
+}
+
+
+gg_nuc <- facet_plot_occ_class(nuc, occ_class = occ_class, y_lab = "Nucleosome signal")
+gg_nuc
+gg_oct <- facet_plot_occ_class(o_sig, occ_class = occ_class, y_lab = "Oct4 ChIP-seq (CPM)")
+gg_ins <- facet_plot_occ_class(ins_over_bias, occ_class = occ_class, y_lab = "ATAC-seq insertions / insertion bias")
+
+library(cowplot)
+pdf("~/Desktop/nucleosome_plots.pdf", width = 7.5, height = 5)
+plot_grid(gg_nuc, 
+          gg_ins, 
+          gg_oct,
+          nrow=1, ncol=3)
+dev.off()
+
+
