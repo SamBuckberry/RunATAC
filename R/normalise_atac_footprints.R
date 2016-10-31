@@ -262,13 +262,43 @@ facet_plot_occ_class <- function(dat, occ_class, y_lab=""){
                       axis.line.x = element_line(color = 'black'),
                       axis.line.y = element_line(color = 'black'))
 }
-
+facet_plot_occ_class_mC <- function(dat, occ_class, y_lab=""){
+        
+        # set the occ class
+        dat$class <- occ_class
+        
+        dat_melt <- melt(dat, id.vars = c('class'))
+        
+        dat_mean <- dat_melt %>%
+                group_by(variable, class) %>%
+                summarise(yy=max(value))
+        
+        dat_mean$variable <- as.character(dat_mean$variable) %>% as.numeric()
+        dash <- 0
+        ggplot(dat_mean, aes(x = variable, y = yy, group=class)) +
+                geom_line() +
+                
+                facet_grid(class~.) +
+                ylab(y_lab) +
+                xlab("Position relative to motif") +
+                theme_bw() +
+                theme(plot.background = element_blank(),
+                      panel.grid.minor = element_blank(),
+                      panel.border = element_blank(),
+                      axis.text = element_text(color = 'black'),
+                      axis.line = element_line(),
+                      #text = element_text(size=8),
+                      axis.line.x = element_line(color = 'black'),
+                      axis.line.y = element_line(color = 'black'))
+}
 
 gg_nuc <- facet_plot_occ_class(nuc, occ_class = occ_class, y_lab = "Nucleosome signal")
 gg_nuc
 gg_oct <- facet_plot_occ_class(o_sig, occ_class = occ_class, y_lab = "Oct4 ChIP-seq (CPM)")
+gg_sox <- facet_plot_occ_class(s_sig, occ_class = occ_class, y_lab = "Sox2 ChIP-seq (CPM)")
 gg_ins <- facet_plot_occ_class(ins_over_bias, occ_class = occ_class, y_lab = "ATAC-seq insertions / insertion bias")
-
+gg_mc <- facet_plot_occ_class(mc, occ_class = occ_class, y_lab = "DNA methylation")
+gg_mc
 library(cowplot)
 pdf("~/Desktop/nucleosome_plots.pdf", width = 7.5, height = 5)
 plot_grid(gg_nuc, 
