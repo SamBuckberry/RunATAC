@@ -156,8 +156,31 @@ range_summary <- function(bigwig, gr, range=100, log=FALSE, aggregate=TRUE){
         return(scores)
 }
 
-atac_sig  <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/atac_iPSC_combined_replicates.ins.bigwig"
-atac_bias <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/mm10_bias.Scores.bigwig"
+
+library(magrittr)
+library(GenomicRanges)
+library(BSgenome.Mmusculus.UCSC.mm10)
+library(rtracklayer)
+library(reshape2)
+library(ggplot2)
+library(dplyr)
+
+# ATAC-seq
+atac_sig  <- "~/Desktop/browser_files/atac_iPSC_combined_replicates.ins.bigwig"
+atac_bias <- "~/Desktop/browser_files/mm10_bias.Scores.bigwig"
+
+# NucleoATAC
+nuc_sig <- "~/Desktop/browser_files/atac_iPSC_combined_replicates.nucleoatac_signal.bigwig"
+occ <- "~/Desktop/browser_files/atac_iPSC_combined_replicates.occ.bigwig"
+
+# ChIP-seq
+oct <- "~/Desktop/browser_files/ips_oct_subtract.bw"
+sox <- "~/Desktop/browser_files/ips_sox_subtract.bw"
+
+# Methylation
+mc <- "~/Desktop/browser_files/mmiPS_6__p1GFPpos.CG.level.unstranded.bigwig"
+
+# Bed files
 regions <- "~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_1.bed"
 tf <- read.table("~/R_packages/RunATAC/inst/exdata/ctcf.pwm") %>% as.matrix()
 
@@ -167,12 +190,7 @@ regions_tf <-  motif_gr(regions, pwm = tf)
 
 ins <- range_summary(bigwig = atac_sig, gr = regions_tf, range = 150, log = FALSE, aggregate = FALSE)
 bias <- range_summary(bigwig = atac_bias, gr = regions_tf, range = 150, log = TRUE, aggregate = FALSE)
-
-
-plot(ins$position, ins$signal, type='l')
-plot(bias$position, bias$signal, type='l')
-
-plot(bias$position, ins$signal / bias$signal, type='l')
+ins_over_bias <- ins / bias
 
 
 load(file = "~/polo_iPSC/resources/pwm_matrix_list.Rda")
@@ -185,22 +203,22 @@ reg_os <-  motif_gr(regions, pwm = os_pwm, min.score = "70%")
 
 ins <- range_summary(bigwig = atac_sig, gr = reg_os, range = 150, log = FALSE, aggregate = FALSE)
 bias <- range_summary(bigwig = atac_bias, gr = reg_os, range = 150, log = TRUE, aggregate = FALSE)
-nuc_sig <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/atac_d12_combined_replicates.nucleoatac_signal.bigwig"
 nuc <- range_summary(bigwig = nuc_sig, gr = reg_os, range = 500, aggregate = FALSE)
-o_sig <- range_summary(bigwig = "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/chip_seq/ips_oct_subtract.bw",
-                       gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
-s_sig <- range_summary(bigwig = "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/chip_seq/ips_sox_subtract.bw",
-                       gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
+o_sig <- range_summary(bigwig = oct, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
+s_sig <- range_summary(bigwig = sox, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
 
-mc <- range_summary(bigwig = "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/methylCseq/mmiPS_6__p1GFPpos.CG.level.unstranded.bigwig",
-                     gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
+mc_sig <- range_summary(bigwig = mc, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
+
+
+
+
+
 
 # Normalise insertions by bias signal
 ins_over_bias <- ins  / bias
 
-
 ## Get the nuc occupancy class
-occ <- range_summary(bigwig = "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/atac_d12_combined_replicates.occ.bigwig",
+occ <- range_summary(bigwig = occ,
                      gr = reg_os, range = 10, log = FALSE, aggregate = FALSE)
 
 occ_means <- rowMeans(occ)
@@ -288,14 +306,16 @@ gg_nuc
 gg_oct <- facet_plot_occ_class(o_sig, occ_class = occ_class, y_lab = "Oct4 ChIP-seq (CPM)")
 gg_sox <- facet_plot_occ_class(s_sig, occ_class = occ_class, y_lab = "Sox2 ChIP-seq (CPM)")
 gg_ins <- facet_plot_occ_class(ins_over_bias, occ_class = occ_class, y_lab = "ATAC-seq insertions / insertion bias")
-gg_mc <- facet_plot_occ_class(mc, occ_class = occ_class, y_lab = "DNA methylation")
+gg_mc <- facet_plot_occ_class(mc_sig, occ_class = occ_class, y_lab = "DNA methylation")
 gg_mc
 library(cowplot)
-pdf("~/Desktop/nucleosome_plots.pdf", width = 7.5, height = 5)
+pdf("~/Desktop/nucleosome_plots.pdf", width = 12.5, height = 5)
 plot_grid(gg_nuc, 
           gg_ins, 
           gg_oct,
-          nrow=1, ncol=3)
+          gg_sox,
+          gg_mc,
+          nrow=1, ncol=5)
 dev.off()
 
 
