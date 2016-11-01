@@ -157,6 +157,87 @@ range_summary <- function(bigwig, gr, range=100, log=FALSE, aggregate=TRUE){
 }
 
 
+### Range summary for DNA methylation
+range_summary_meth <- function(bigwig, gr, range=100, log=FALSE, aggregate=TRUE){
+        
+        # Make all GRanges same width by fixing centre
+        region_gr <- GenomicRanges::resize(gr, width = range+(range+1), 
+                                           fix = 'center')
+        
+        # Get the signal for each base for the defined regions
+        # Reurns a SimpleNumericList
+        
+        scores <- rtracklayer::import(con = bigwig, format = "Bigwig",
+                                      which=region_gr, as="NumericList")
+        
+        # Transform scores from Log if log == TRUE
+        if(log == TRUE){
+                scores <- exp(scores)
+        }
+        
+        # Reformat to data.frame
+        scores <- as.data.frame(scores)
+        
+        # Set the relative postion
+        range_intervals <- (0-range):(0+range)
+        scores$position <- rep(range_intervals,
+                               times=length(unique(scores$group)))
+        
+        # Drop the group_name
+        scores$group_name <- NULL
+        
+        # Reformat data into matrix
+        scores <- tidyr::spread(scores, key = position, value = value)
+        rownames(scores) <- scores$group
+        scores$group <- NULL
+        
+        
+        # Find the CG positions
+        library(Biostrings)
+        seq <- getSeq(Mmusculus, region_gr)
+        
+        mf <- vmatchPattern(pattern = "CG", subject = seq)
+        mf <- start(mf)
+        
+        mr <- vmatchPattern(pattern = "GC", subject = complement(seq))
+        mr <- end(mr)
+        
+        # Create a matrix indicating CG postions
+        n_postions <- 1:ncol(scores)
+        
+        is_pos_cg <- function(x){
+                c_pos <- c(mf[[x]], mr[[x]])
+                
+                # Get TRUE/FALSE of CG position
+                hit <- n_postions %in% c_pos
+                
+                return(hit)
+        } 
+        
+        cg_hit <- lapply(1:length(region_gr), is_pos_cg)
+        cg_hit <- do.call(rbind, cg_hit)
+        
+        cg_hit[cg_hit ==  FALSE] <- NA
+        
+        scores <- cg_hit + scores
+        scores <- scores - 1
+        
+        # Aggregate scores if aggregate=TRUE
+        if(aggregate == TRUE){
+                scores <- colSums(scores)
+                rel_pos <- names(scores) %>% as.character %>% as.numeric()
+                scores <- data.frame(position=rel_pos,
+                                     signal=scores)
+                rownames(scores) <- NULL
+        }
+        
+        return(scores)
+}
+
+
+
+
+
 library(magrittr)
 library(GenomicRanges)
 library(BSgenome.Mmusculus.UCSC.mm10)
@@ -207,7 +288,7 @@ nuc <- range_summary(bigwig = nuc_sig, gr = reg_os, range = 500, aggregate = FAL
 o_sig <- range_summary(bigwig = oct, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
 s_sig <- range_summary(bigwig = sox, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
 
-mc_sig <- range_summary(bigwig = mc, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
+mc_sig <- range_summary_meth(bigwig = mc, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
 
 
 
@@ -243,6 +324,9 @@ set_occ_class <- function(x){
 occ_class <- lapply(occ_means, set_occ_class) %>% unlist()
 
 
+
+
+#### Functions fot facet plots
 facet_plot_occ_class <- function(dat, occ_class, y_lab=""){
         
         # set the occ class
@@ -271,22 +355,25 @@ facet_plot_occ_class <- function(dat, occ_class, y_lab=""){
                       axis.line.x = element_line(color = 'black'),
                       axis.line.y = element_line(color = 'black'))
 }
-facet_plot_occ_class_mC <- function(dat, occ_class, y_lab=""){
+facet_plot_occ_class_mC <- function(mc_sig, occ_class, y_lab=""){
         
         # set the occ class
         dat$class <- occ_class
         
         dat_melt <- melt(dat, id.vars = c('class'))
         
-        dat_mean <- dat_melt %>%
-                group_by(variable, class) %>%
-                summarise(yy=max(value))
+        # Remove NA
+        dat_melt <- dat_melt[complete.cases(dat_melt), ]
+
+#         dat_mean <- dat_melt %>%
+#                 group_by(variable, class) %>%
+#                 summarise(yy=mean(value, na.rm = TRUE))
         
-        dat_mean$variable <- as.character(dat_mean$variable) %>% as.numeric()
-        dash <- 0
-        ggplot(dat_mean, aes(x = variable, y = yy, group=class)) +
-                geom_line() +
-                
+        dat_melt$variable <- as.character(dat_melt$variable) %>% as.numeric()
+        
+        gg <- ggplot(dat_melt, aes(x = variable, y = value, group=class)) +
+                #geom_line() +
+                geom_smooth(colour='black', size=1) +
                 facet_grid(class~.) +
                 ylab(y_lab) +
                 xlab("Position relative to motif") +
@@ -299,16 +386,21 @@ facet_plot_occ_class_mC <- function(dat, occ_class, y_lab=""){
                       #text = element_text(size=8),
                       axis.line.x = element_line(color = 'black'),
                       axis.line.y = element_line(color = 'black'))
+        
+        return(gg)
 }
+
+
 
 gg_nuc <- facet_plot_occ_class(nuc, occ_class = occ_class, y_lab = "Nucleosome signal")
 gg_nuc
 gg_oct <- facet_plot_occ_class(o_sig, occ_class = occ_class, y_lab = "Oct4 ChIP-seq (CPM)")
 gg_sox <- facet_plot_occ_class(s_sig, occ_class = occ_class, y_lab = "Sox2 ChIP-seq (CPM)")
 gg_ins <- facet_plot_occ_class(ins_over_bias, occ_class = occ_class, y_lab = "ATAC-seq insertions / insertion bias")
-gg_mc <- facet_plot_occ_class(mc_sig, occ_class = occ_class, y_lab = "DNA methylation")
+gg_mc <- facet_plot_occ_class_mC(mc_sig, occ_class = occ_class, y_lab = "DNA methylation")
 gg_mc
 library(cowplot)
+
 pdf("~/Desktop/nucleosome_plots.pdf", width = 12.5, height = 5)
 plot_grid(gg_nuc, 
           gg_ins, 
