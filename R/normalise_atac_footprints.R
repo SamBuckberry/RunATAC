@@ -156,26 +156,17 @@ range_summary <- function(bigwig, gr, range=100, log=FALSE, aggregate=TRUE){
         return(scores)
 }
 
-atac_sig  <- "~/Desktop/atac_iPSC_combined_replicates.ins.bigwig"
+atac_sig  <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/atac_iPSC_combined_replicates.ins.bigwig"
 atac_bias <- "http://cpebrazor.ivec.org/public/listerlab/sam/polo_mm_iPSC/atac/mm10_bias.Scores.bigwig"
 regions <- "~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_1.bed"
 tf <- read.table("~/R_packages/RunATAC/inst/exdata/ctcf.pwm") %>% as.matrix()
-
-
-
-
 
 regions <- read_bed(regions) 
 #regions <- regions[seqnames(regions) == "chr19"]
 regions_tf <-  motif_gr(regions, pwm = tf)
 
-ins <- range_summary(bigwig = atac_sig, gr = regions_tf, range = 150, log = FALSE)
-bias <- range_summary(bigwig = atac_bias, gr = regions_tf, range = 150, log = TRUE)
-
-ins_full <- range_summary(bigwig = atac_sig, gr = regions_tf, range = 150,
-                          log = FALSE, aggregate = FALSE)
-bias_full <- range_summary(bigwig = atac_bias, gr = regions_tf, range = 150,
-                           log = TRUE, aggregate = FALSE)
+ins <- range_summary(bigwig = atac_sig, gr = regions_tf, range = 150, log = FALSE, aggregate = FALSE)
+bias <- range_summary(bigwig = atac_bias, gr = regions_tf, range = 150, log = TRUE, aggregate = FALSE)
 
 
 plot(ins$position, ins$signal, type='l')
