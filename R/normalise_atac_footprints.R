@@ -1,4 +1,5 @@
 
+
 #' Read BED formatted file to GRanges object
 #' 
 #' @param bed_file Path Path to BED formatted file.
@@ -57,8 +58,9 @@ motif_gr <- function(gr, pwm, genome=Mmusculus, min.score="85%"){
         find_motif_start <- function(x)
         {
                 motif_starts_pos <- Biostrings::matchPWM(pwm = pwm, subject = sequences[[x]],
-                                                     min.score = min.score) %>% start()
+                                                     min.score = min.score) #%>% start()
                 
+        
                 motif_starts_neg <- Biostrings::matchPWM(pwm = reverseComplement(pwm),
                                                          subject = sequences[[x]],
                                                          min.score = min.score) %>% start()
@@ -235,9 +237,6 @@ range_summary_meth <- function(bigwig, gr, range=100, log=FALSE, aggregate=TRUE)
 }
 
 
-
-
-
 library(magrittr)
 library(GenomicRanges)
 library(BSgenome.Mmusculus.UCSC.mm10)
@@ -263,44 +262,21 @@ mc <- "~/Desktop/browser_files/mmiPS_6__p1GFPpos.CG.level.unstranded.bigwig"
 
 # Bed files
 regions <- "~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_1.bed"
-tf <- read.table("~/R_packages/RunATAC/inst/exdata/ctcf.pwm") %>% as.matrix()
+ctcf <- read.table("~/R_packages/RunATAC/inst/exdata/ctcf.pwm") %>% as.matrix()
 
 regions <- read_bed(regions) 
 #regions <- regions[seqnames(regions) == "chr19"]
-regions_tf <-  motif_gr(regions, pwm = tf)
+regions_ctcf <-  motif_gr(regions, pwm = ctcf)
 
-ins <- range_summary(bigwig = atac_sig, gr = regions_tf, range = 150, log = FALSE, aggregate = FALSE)
-bias <- range_summary(bigwig = atac_bias, gr = regions_tf, range = 150, log = TRUE, aggregate = FALSE)
+ins <- range_summary(bigwig = atac_sig, gr = regions_ctcf, range = 150, log = FALSE, aggregate = FALSE)
+bias <- range_summary(bigwig = atac_bias, gr = regions_ctcf, range = 150, log = TRUE, aggregate = FALSE)
 ins_over_bias <- ins / bias
 
-
-load(file = "~/polo_iPSC/resources/pwm_matrix_list.Rda")
-# Get mofif PWM for Oct4-Sox2
-os_pwm <- pwm_matrix_list$MA0142.1
-
-regions <- ("~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_1.bed")
-regions <- read_bed(regions)
-reg_os <-  motif_gr(regions, pwm = os_pwm, min.score = "70%")
-
-ins <- range_summary(bigwig = atac_sig, gr = reg_os, range = 150, log = FALSE, aggregate = FALSE)
-bias <- range_summary(bigwig = atac_bias, gr = reg_os, range = 150, log = TRUE, aggregate = FALSE)
-nuc <- range_summary(bigwig = nuc_sig, gr = reg_os, range = 500, aggregate = FALSE)
-o_sig <- range_summary(bigwig = oct, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
-s_sig <- range_summary(bigwig = sox, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
-
-mc_sig <- range_summary_meth(bigwig = mc, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
-
-
-
-
-
-
-# Normalise insertions by bias signal
-ins_over_bias <- ins  / bias
+nuc <- range_summary(bigwig = nuc_sig, gr = regions_ctcf, range = 500, aggregate = FALSE)
 
 ## Get the nuc occupancy class
 occ <- range_summary(bigwig = occ,
-                     gr = reg_os, range = 10, log = FALSE, aggregate = FALSE)
+                     gr = regions_ctcf, range = 10, log = FALSE, aggregate = FALSE)
 
 occ_means <- rowMeans(occ)
 
@@ -364,10 +340,10 @@ facet_plot_occ_class_mC <- function(mc_sig, occ_class, y_lab=""){
         
         # Remove NA
         dat_melt <- dat_melt[complete.cases(dat_melt), ]
-
-#         dat_mean <- dat_melt %>%
-#                 group_by(variable, class) %>%
-#                 summarise(yy=mean(value, na.rm = TRUE))
+        
+        #         dat_mean <- dat_melt %>%
+        #                 group_by(variable, class) %>%
+        #                 summarise(yy=mean(value, na.rm = TRUE))
         
         dat_melt$variable <- as.character(dat_melt$variable) %>% as.numeric()
         
@@ -390,6 +366,66 @@ facet_plot_occ_class_mC <- function(mc_sig, occ_class, y_lab=""){
         return(gg)
 }
 
+facet_plot_occ_class(dat = nuc, occ_class=1, y_lab = "Nucleosome signal")
+facet_plot_occ_class(dat = ins_over_bias, occ_class=1, y_lab = "Insertions")
+
+
+
+
+load(file = "~/polo_iPSC/resources/pwm_matrix_list.Rda")
+# Get mofif PWM for Oct4-Sox2
+os_pwm <- pwm_matrix_list$MA0142.1
+
+regions <- ("~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_1.bed")
+regions <- read_bed(regions)
+reg_os <-  motif_gr(regions, pwm = os_pwm, min.score = "70%")
+
+ins <- range_summary(bigwig = atac_sig, gr = reg_os, range = 150, log = FALSE, aggregate = FALSE)
+bias <- range_summary(bigwig = atac_bias, gr = reg_os, range = 150, log = TRUE, aggregate = FALSE)
+nuc <- range_summary(bigwig = nuc_sig, gr = reg_os, range = 500, aggregate = FALSE)
+o_sig <- range_summary(bigwig = oct, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
+s_sig <- range_summary(bigwig = sox, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
+
+mc_sig <- range_summary_meth(bigwig = mc, gr = reg_os, range = 500, log = FALSE, aggregate = FALSE)
+
+
+
+
+
+
+# Normalise insertions by bias signal
+ins_over_bias <- ins  / bias
+
+## Get the nuc occupancy class
+occ <- range_summary(bigwig = occ,
+                     gr = reg_os, range = 10, log = FALSE, aggregate = FALSE)
+
+occ_means <- rowMeans(occ)
+
+set_occ_class <- function(x){
+        
+        dat <- NULL
+        
+        if (x < 0.1) {
+                dat <- "A"
+        } else if (x >= 0.1 & x < 0.3) {
+                dat <- "B" 
+        } else if (x >= 0.3 & x < 0.5) {
+                dat <- "C"
+        } else if (x > 0.5) { 
+                dat <- "D"
+        }
+        
+        return(dat)
+}
+
+occ_class <- lapply(occ_means, set_occ_class) %>% unlist()
+
+
+
+
+
+
 
 
 gg_nuc <- facet_plot_occ_class(nuc, occ_class = occ_class, y_lab = "Nucleosome signal")
@@ -410,4 +446,61 @@ plot_grid(gg_nuc,
           nrow=1, ncol=5)
 dev.off()
 
+
+library(pheatmap)
+
+pdf("~/Desktop/testHeatmap.pdf")
+pheatmap(mat = o_sig, cluster_rows = TRUE, cluster_cols = FALSE, scale = 'row')
+dev.off()
+
+test <- as.matrix(ins)
+image(test)
+
+
+
+
+
+
+##### Does nucleosome occupancy score change over time of OS in open chromatin?
+
+# Get mofif PWM for Oct4-Sox2
+load(file = "~/polo_iPSC/resources/pwm_matrix_list.Rda")
+os_pwm <- pwm_matrix_list$MA0142.1
+
+# GRanges of OS motif in open chromatin (Cluster 1)
+c1_gr <- read_bed("~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_6.bed")
+os_gr <-  motif_gr(c1_gr, pwm = os_pwm, min.score = "85%")
+
+# Bigwig of nucleoATAC occupancy scores
+occ_fls <- c("/Volumes/Datasets/atac_MEF_combined_replicates.occ.bigwig",
+        "/Volumes/Datasets/atac_d3_combined_replicates.occ.bigwig",
+        "/Volumes/Datasets/atac_d6_combined_replicates.occ.bigwig",
+        "/Volumes/Datasets/atac_d9_combined_replicates.occ.bigwig",
+        "/Volumes/Datasets/atac_d12_combined_replicates.occ.bigwig",
+        "/Volumes/Datasets/atac_iPSC_combined_replicates.occ.bigwig")
+
+## Get the nuc occupancy score for each 
+
+occ_scores <- lapply(occ_fls, range_summary, 
+                     gr = os_gr, range = 10, log = FALSE, aggregate = FALSE)
+
+occ_means <- lapply(occ_scores, rowMeans)
+
+occ_means <- do.call(cbind, occ_means)
+colnames(occ_means) <- c("MEF", "d3", "d6", "d9", "d12", "iPSC")
+
+occ_means <- melt(occ_means)
+
+ggplot(occ_means, aes(x = Var2, y=value)) + geom_violin()
+
+
+
+### Predict ChIP-seq peaks from ATAC-seq data
+
+c1_gr <- read_bed("~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_1.bed")
+c5_gr <- read_bed("~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_5.bed")
+c7_gr <- read_bed("~/polo_iPSC/ATACseq/processed_data/atac_cluster_peaks/c_means_peaks/cluster_7.bed")
+
+ips_open <- c(c1_gr, c5_gr, c7_gr)
+ips_open <-  motif_gr(ips_open, pwm = os_pwm, min.score = "75%")
 
