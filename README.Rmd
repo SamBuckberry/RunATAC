@@ -9,6 +9,33 @@ This package is currently is it's infantcy. Don't expect any real functionality 
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+### Plot ATAC-seq insert size histogram
+```{r}
+library(RunATAC)
+frags <- read_atac_frags(bam_file = "chr19.bam")
+plot_insert_size(frags)
+```
+
+### Generate a Tn5 insertion site bigiwg file
+```{r}
+
+```
+
+### Calculate proportion of reads mapped to mitochondrial genome
+```{r}
+
+```
+
+### Calculate the fraction of reads in peaks (FrIP)
+```{r}
+
+```
+
+### Generate a read counts table for peaks
+```{r}
+
+```
+
 
 ### Plotting ATAC-seq footprints
 
@@ -16,7 +43,7 @@ In this example, we will plot the Tn5 insertion signal around CTCF motifs in ATA
 
 Get the CTCF motif from the JASPAR database.
 ```{r, message=FALSE, comment=FALSE}
-library(JASPAR2014)
+library(JASPAR2016)
 library(TFBSTools)
 library(BSgenome.Mmusculus.UCSC.mm10)
 
@@ -27,11 +54,14 @@ opts[["all_versions"]] <- TRUE
 opts[["collection"]] <- "CORE"
 opts[["matrixtype"]] <- "PFM"
 opts[["tax_group"]] <- "vertebrates"
-pwm_data <- getMatrixSet(JASPAR2014, opts)
+pwm_data <- getMatrixSet(JASPAR2016, opts)
 pwm_matrix_list <- Matrix(pwm_data)
 
 # Get mofif PWM for CTCF
 ctcf <- pwm_matrix_list$MA0139.1
+
+
+
 ```
 
 Load the bed file of ATAC-seq peaks.
