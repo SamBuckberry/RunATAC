@@ -23,13 +23,15 @@ overwrite=true
 ## bowtie2 alignment
 (/usr/local/packages/bowtie2-2.2.5/bowtie2 -q --threads "$cores" -X2000 \
 -x "$index" \
--1 "$prefix".tmp_R1.fq -2 "$prefix".tmp_R2.fq | \
-samtools view -bSu - | samtools sort -T sorted - > "$prefix".bam) 2> "$prefix".log
+-1 "$prefix".tmp_R1.fq -2 "$prefix".tmp_R2.fq > "$prefix".sam) 2> "$prefix".log
 
-# Create the bam file index
-sambamba_v0.5.9 index "$prefix".bam
+# SAM to BAM
+sambamba_v0.6.3 view -f bam -S "$prefix".sam -o "$prefix".bam
+
+sambamba_v0.6.3 sort "$prefix".bam -o "$prefix".sorted.bam
+
+sambamba_v0.6.3 markdup -r -t "$cores" "$prefix".sorted.bam "$prefix".dedup.bam  
 
 # Remove the tmp files
-rm "$prefix".tmp_R1.fq "$prefix".tmp_R2.fq 
-
+rm "$prefix".tmp_R1.fq "$prefix".tmp_R2.fq "$prefix".sam "$prefix".sorted.bam
 

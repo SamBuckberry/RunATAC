@@ -12,11 +12,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ### Plot ATAC-seq insert size histogram
 ```{r}
 library(RunATAC)
-frags <- read_atac_frags(bam_file = "chr19.bam")
-plot_insert_size(frags)
+bam <- system.file("extdata", "chrs_I_M.bam", package = "RunATAC")
+#frags <- read_atac_frags(bam_file = chr19)
+#plot_insert_size(frags)
 ```
 
-### Generate a Tn5 insertion site bigiwg file
+### Generate a Tn5 insertion site bigwig file
 ```{r}
 
 ```
@@ -36,31 +37,20 @@ plot_insert_size(frags)
 
 ```
 
-
 ### Plotting ATAC-seq footprints
 
 In this example, we will plot the Tn5 insertion signal around CTCF motifs in ATAC-seq peaks using a positional weight matrix (PWM).
 
-Get the CTCF motif from the JASPAR database.
+Get the REB1 motif from the JASPAR database.
 ```{r, message=FALSE, comment=FALSE}
 library(JASPAR2016)
 library(TFBSTools)
-library(BSgenome.Mmusculus.UCSC.mm10)
 
-# Get the motif PWM
-### Get the PWM data from the database and reformat for test functions
-opts <- list()
-opts[["all_versions"]] <- TRUE
-opts[["collection"]] <- "CORE"
-opts[["matrixtype"]] <- "PFM"
-opts[["tax_group"]] <- "vertebrates"
-pwm_data <- getMatrixSet(JASPAR2016, opts)
-pwm_matrix_list <- Matrix(pwm_data)
+source("https://bioconductor.org/biocLite.R")
+biocLite("BSgenome.Scerevisiae.UCSC.sacCer3")
+library(BSgenome.Scerevisiae.UCSC.sacCer3)
 
-# Get mofif PWM for CTCF
-ctcf <- pwm_matrix_list$MA0139.1
-
-
+reb1 <- getMatrixByName(JASPAR2016, name=c("REB1"))
 
 ```
 
@@ -79,7 +69,7 @@ Get the positions of motif in peaks.
 gr_motif <- motif_gr(gr = peaks, pwm = pwm, genome = Mmusculus)
 ```
 
-## Get the distances from motif.
+Get the distances from motif.
 ```{r}
 dists <- atac_motif_dist(tn_signal_gr = tn, motif_pos_gr = gr_motif, range = 150)
 ```
@@ -89,5 +79,9 @@ Plot the footprint.
 plot_scaled_footprint(dists, window = 300, col='red', lwd=2, main="CTCF")
 ```
 
+Generate V-plot for CTCF motif
+```{r}
+
+```
 
 
