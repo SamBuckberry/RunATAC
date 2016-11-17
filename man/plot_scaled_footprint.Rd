@@ -4,13 +4,18 @@
 \alias{plot_scaled_footprint}
 \title{Plot scaled ATAC-seq footprint signal.}
 \usage{
-plot_scaled_footprint(tn_dist, window = 200, ...)
+plot_scaled_footprint(tn_dist, window = 200, scale_to_lib = FALSE,
+  libsize = 1, xlab = "", ylab = "", ...)
 }
 \arguments{
 \item{tn_dist}{A vector of distances of tn5 insertions relative to motif centre.
 See atac_motif_dist function.}
 
 \item{window}{The plotting window in bases.}
+
+\item{scale_to_lib}{Should plot be scaled to library size?. Logical.}
+
+\item{libsize}{The ATAC-seq library size for normalising signal to tn5 intergration events per million}
 
 \item{...}{Optional arguments passed to plot function.}
 }

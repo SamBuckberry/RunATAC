@@ -3,6 +3,7 @@
 export(atac_motif_dist)
 export(gr_centre_motif)
 export(motif_gr)
+export(plot_insert_size)
 export(plot_scaled_footprint)
 export(read_atac_bam_tn)
 export(read_atac_frags)

@@ -9,13 +9,26 @@ This package is currently is it's infantcy. Don't expect any real functionality 
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Plot ATAC-seq insert size histogram
+
+### Install and load the package
 ```{r}
+devtools::install_github("SamBuckberry/RunATAC")
 library(RunATAC)
-bam <- system.file("extdata", "chrs_I_M.bam", package = "RunATAC")
-#frags <- read_atac_frags(bam_file = chr19)
-#plot_insert_size(frags)
 ```
+
+### Plot ATAC-seq insert size histogram
+
+First, load a BAM file. Here we will use a BAM file included in the RunATAC package. This BAM is from ATAC-seq on Saccharomyces cerevisiae and includes data only from chrIV. 
+```{r}
+bam_fl <- system.file("extdata", "chrIV.bam", package = "RunATAC")
+frags <- read_atac_frags(bam_file = bam_fl)
+```
+
+Plot the insert size distribution
+```{r, fig.height=3, fig.width=5}
+plot_insert_size(frags)
+```
+
 
 ### Generate a Tn5 insertion site bigwig file
 ```{r}
@@ -27,10 +40,28 @@ bam <- system.file("extdata", "chrs_I_M.bam", package = "RunATAC")
 
 ```
 
-### Calculate the fraction of reads in peaks (FrIP)
-```{r}
+### Calculate the fraction of Tn5 insetions in peaks (FrIP)
 
+Get the Tn5 insertion points from BAM file into GRanges object
+```{r}
+ins <- read_atac_bam_tn(bam_fl)
+ins
 ```
+
+Load the peak data in the MACS2 .narrowPeak format
+```{r}
+peak_fl <- system.file("extdata", "chrIV_peaks.narrowPeak", package = "RunATAC")
+peaks <- read_bed(peak_fl)
+peaks
+```
+
+Calculate the fraction of reads in peaks
+```{r}
+hits <- overlapsAny(query = ins, subject = peaks)
+FrIP <- sum(hits) / length(ins)
+FrIP
+```
+
 
 ### Generate a read counts table for peaks
 ```{r}
@@ -43,15 +74,12 @@ In this example, we will plot the Tn5 insertion signal around CTCF motifs in ATA
 
 Get the REB1 motif from the JASPAR database.
 ```{r, message=FALSE, comment=FALSE}
+#source("https://bioconductor.org/biocLite.R")
+#biocLite("BSgenome.Scerevisiae.UCSC.sacCer3")
+library(BSgenome.Scerevisiae.UCSC.sacCer3)
 library(JASPAR2016)
 library(TFBSTools)
-
-source("https://bioconductor.org/biocLite.R")
-biocLite("BSgenome.Scerevisiae.UCSC.sacCer3")
-library(BSgenome.Scerevisiae.UCSC.sacCer3)
-
 reb1 <- getMatrixByName(JASPAR2016, name=c("REB1"))
-
 ```
 
 Load the bed file of ATAC-seq peaks.
