@@ -3,12 +3,6 @@
 #' @param frag_gr A GRanges object of ATAC-seq fragments
 #' @return A plot to the current graphics device
 #' @export
-#' @examples
-#' \dontrun{
-#' 
-#' frags <- read_atac_frags("chr19.bam")
-#' plot_insert_size(frags)
-#' }
 plot_insert_size <- function(frag_gr, ...){
         
         # Check inputs

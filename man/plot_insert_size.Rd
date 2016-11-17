@@ -15,11 +15,4 @@ A plot to the current graphics device
 \description{
 Plot insert size historgram
 }
-\examples{
-\dontrun{
-
-frags <- read_atac_frags("chr19.bam")
-plot_insert_size(frags)
-}
-}
 

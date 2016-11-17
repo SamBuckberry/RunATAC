@@ -26,13 +26,13 @@ frags <- read_atac_frags(bam_file = bam_fl)
 
 Plot the insert size distribution
 ```{r, fig.height=3, fig.width=5}
-plot_insert_size(frags)
+plot_insert_size(frags, xlim=c(0,600))
 ```
 
 
 ### Generate a Tn5 insertion site bigwig file
 ```{r}
-
+bam_to_insertions_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.ins.bigwig")
 ```
 
 ### Calculate proportion of reads mapped to mitochondrial genome
@@ -44,7 +44,7 @@ plot_insert_size(frags)
 
 Get the Tn5 insertion points from BAM file into GRanges object
 ```{r}
-ins <- read_atac_bam_tn(bam_fl)
+ins <- read_atac_insertions(bam_fl)
 ins
 ```
 
@@ -79,37 +79,58 @@ Get the REB1 motif from the JASPAR database.
 library(BSgenome.Scerevisiae.UCSC.sacCer3)
 library(JASPAR2016)
 library(TFBSTools)
+library(magrittr)
 reb1 <- getMatrixByName(JASPAR2016, name=c("REB1"))
-```
-
-Load the bed file of ATAC-seq peaks.
-```{r}
-peaks <- read_bed("~/polo_iPSC/ATACseq/processed_data/atac_peaks/atac_all_peaks_union.bed")
-```
-
-Read in the BAM and get insertion signal for regions.
-```{r}
-tn <- read_atac_bam_tn(bam_file = "~/Desktop/test.bam", yieldSize = 1e6, which=rgns)
+reb1 <- reb1@profileMatrix
 ```
 
 Get the positions of motif in peaks.
 ```{r}
-gr_motif <- motif_gr(gr = peaks, pwm = pwm, genome = Mmusculus)
+motif_pos <- motif_gr(gr = peaks, pwm = reb1, genome = Scerevisiae)
 ```
 
-Get the distances from motif.
+Get the insertion data for the motif regions
 ```{r}
-dists <- atac_motif_dist(tn_signal_gr = tn, motif_pos_gr = gr_motif, range = 150)
+ins_bw <- system.file("extdata", "chrIV.ins.bigwig", package = "RunATAC")
+dat <- range_summary(bigwig = ins_bw, gr = motif_pos)
+
+library(reshape2)
+library(dplyr)
+library(ggplot2)
+mdat <- melt(dat)
+fp <- mdat %>% group_by(variable) %>%
+                        summarise(yy=mean(value))
+
+
+gg <- ggplot(fp, aes(x = variable, y = yy, fill = 'blue', title="")) +
+                #stat_smooth(span = 10) +
+                #geom_area(aes(fill = 'blue', stat = "bin")) +
+                geom_line(size=0.3) +
+                xlab("Distance from motif") +
+                ylab("Normalised insertions / insertion bias") +
+                ggtitle(title) +
+                theme_bw() +
+                theme(plot.background = element_blank(),
+                      panel.border = element_blank(),
+                      strip.background = element_rect(size = 0),
+                      panel.grid.minor = element_blank(),
+                      axis.line = element_line(),
+                      axis.text = element_text(size=8))
 ```
 
 Plot the footprint.
 ```{r}
-plot_scaled_footprint(dists, window = 300, col='red', lwd=2, main="CTCF")
+plot_scaled_footprint(dists, window = 600, col='red', lwd=2, main="REB1")
 ```
 
 Generate V-plot for CTCF motif
 ```{r}
-
+frags_gr <- frags
+frag_midpoint <- resize(frags, fix = 'center', width = 1)
+dists <- calc_motif_dist(tn_signal_gr = frag_midpoint, motif_pos_gr = motif_pos, range = 600)
+sizes <- width(frags)
+length(dists)
+length(sizes)
 ```
 
 
