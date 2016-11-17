@@ -33,6 +33,7 @@ plot_insert_size(frags, xlim=c(0,600))
 ### Generate a Tn5 insertion site bigwig file
 ```{r}
 bam_to_insertions_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.ins.bigwig")
+bam_to_centres_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.nuc.bigwig")
 ```
 
 ### Calculate proportion of reads mapped to mitochondrial genome
@@ -100,6 +101,7 @@ library(ggplot2)
 mdat <- melt(dat)
 fp <- mdat %>% group_by(variable) %>%
                         summarise(yy=mean(value))
+fp$variable <- as.character(fp$variable) %>% as.numeric()
 
 
 gg <- ggplot(fp, aes(x = variable, y = yy, fill = 'blue', title="")) +
@@ -107,7 +109,7 @@ gg <- ggplot(fp, aes(x = variable, y = yy, fill = 'blue', title="")) +
                 #geom_area(aes(fill = 'blue', stat = "bin")) +
                 geom_line(size=0.3) +
                 xlab("Distance from motif") +
-                ylab("Normalised insertions / insertion bias") +
+                ylab("Tn5 insertions") +
                 ggtitle(title) +
                 theme_bw() +
                 theme(plot.background = element_blank(),
@@ -116,11 +118,7 @@ gg <- ggplot(fp, aes(x = variable, y = yy, fill = 'blue', title="")) +
                       panel.grid.minor = element_blank(),
                       axis.line = element_line(),
                       axis.text = element_text(size=8))
-```
-
-Plot the footprint.
-```{r}
-plot_scaled_footprint(dists, window = 600, col='red', lwd=2, main="REB1")
+gg
 ```
 
 Generate V-plot for CTCF motif
