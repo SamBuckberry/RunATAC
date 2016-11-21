@@ -2,7 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-
 inst/.DS_Store
-
 inst/.DS_Store
+README_cache/*

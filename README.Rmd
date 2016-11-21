@@ -6,32 +6,34 @@ RunATAC
 This package is currently is it's infantcy. Don't expect any real functionality for a while...
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache = FALSE, results = "hide",
+                      comment = FALSE, warning = FALSE, message=FALSE)
 ```
 
 
 ### Install and load the package
-```{r}
+```{r, eval=FALSE}
+library(devtools)
 devtools::install_github("SamBuckberry/RunATAC")
-library(RunATAC)
 ```
 
 ### Plot ATAC-seq insert size histogram
 
 First, load a BAM file. Here we will use a BAM file included in the RunATAC package. This BAM is from ATAC-seq on Saccharomyces cerevisiae and includes data only from chrIV. 
 ```{r}
+library(RunATAC)
 bam_fl <- system.file("extdata", "chrIV.bam", package = "RunATAC")
 frags <- read_atac_frags(bam_file = bam_fl)
 ```
 
-Plot the insert size distribution
+Plot the insert size distribution. 
+
 ```{r, fig.height=3, fig.width=5}
 plot_insert_size(frags, xlim=c(0,600))
 ```
 
-
-### Generate a Tn5 insertion site bigwig file
-```{r}
+### Generate a Tn5 insertion site and nucleosome bigwig files
+```{r, eval=FALSE}
 bam_to_insertions_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.ins.bigwig")
 bam_to_centres_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.nuc.bigwig")
 ```
@@ -58,8 +60,9 @@ peaks
 
 Calculate the fraction of reads in peaks
 ```{r}
-hits <- overlapsAny(query = ins, subject = peaks)
-FrIP <- sum(hits) / length(ins)
+library(GenomicRanges)
+olaps <- overlapsAny(query = ins, subject = peaks)
+FrIP <- sum(olaps) / length(ins)
 FrIP
 ```
 
@@ -88,10 +91,11 @@ reb1 <- reb1@profileMatrix
 Get the positions of motif in peaks.
 ```{r}
 motif_pos <- motif_gr(gr = peaks, pwm = reb1, genome = Scerevisiae)
+motif_pos
 ```
 
 Get the insertion data for the motif regions
-```{r}
+```{r, fig.height=4, fig.width=4.5, eval=FALSE}
 ins_bw <- system.file("extdata", "chrIV.ins.bigwig", package = "RunATAC")
 dat <- range_summary(bigwig = ins_bw, gr = motif_pos)
 
@@ -121,14 +125,14 @@ gg <- ggplot(fp, aes(x = variable, y = yy, fill = 'blue', title="")) +
 gg
 ```
 
-Generate V-plot for CTCF motif
-```{r}
-frags_gr <- frags
-frag_midpoint <- resize(frags, fix = 'center', width = 1)
-dists <- calc_motif_dist(tn_signal_gr = frag_midpoint, motif_pos_gr = motif_pos, range = 600)
-sizes <- width(frags)
-length(dists)
-length(sizes)
+Generate V-plot for motif regions
+```{r, fig.height=4, fig.width=4.5}
+plot_v(frags, motif_pos, alpha = 0.01)
 ```
 
+
+Calculate bias track
+```{r}
+
+```
 

@@ -1,6 +1,6 @@
 #' Calculate distances of Tn5 insertions from motif.
 #' 
-#' @param tn_signal_gr A GRanges object with tn5 insertions. See the read_atac_bam_tn function.
+#' @param signal_gr A GRanges object with tn5 insertions. See the read_atac_bam_tn function.
 #' @param motif_pos_gr A GRanges object with the positions of the PWM in ATAC-seq peaks.
 #' @param range The distance in bases flanking the the motif to calculate signal.
 #' @return A numeric vector of distances of Tn5 insertion sites to motif centre.
@@ -8,14 +8,14 @@
 #' @import GenomicRanges
 #' @import IRanges
 #' @export
-calc_motif_dist <- function(tn_signal_gr, motif_pos_gr, range=200){
+calc_motif_dist <- function(signal_gr, motif_pos_gr, range=200){
         
         # Resize to range of signal collection
         motif_pos_gr <- GenomicRanges::resize(motif_pos_gr, width = range*2,
                                               fix = 'center')
         
         # Subset the Tn5 signal
-        tn_signal_gr <- tn_signal_gr[IRanges::overlapsAny(query = tn_signal_gr,
+        signal_gr <- signal_gr[IRanges::overlapsAny(query = signal_gr,
                                                           subject = motif_pos_gr)]
         
         #For each motif, get the distances of nearby Tn5 insertions
@@ -25,7 +25,7 @@ calc_motif_dist <- function(tn_signal_gr, motif_pos_gr, range=200){
                 motif_pos <- motif_pos_gr[x]
                 
                 # Get the tn5 hits for range
-                tn_sub <- tn_signal_gr[IRanges::overlapsAny(query = tn_signal_gr,
+                tn_sub <- signal_gr[IRanges::overlapsAny(query = signal_gr,
                                                             subject = motif_pos)]
                 
                 # Calculate the relative distance to the motif centre for insertions

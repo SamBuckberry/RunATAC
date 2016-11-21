@@ -8,7 +8,6 @@
 #' @return A numeric vector of aggregate signal if aggregate = TRUE, which is the default. 
 #' If aggregate = FALSE a data.frame of signal of all regions is returned.
 #' @export
-#' @import magrittr
 #' @import GenomicRanges
 #' @import IRanges
 #' @import tidyr

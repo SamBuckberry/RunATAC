@@ -4,10 +4,10 @@
 \alias{calc_motif_dist}
 \title{Calculate distances of Tn5 insertions from motif.}
 \usage{
-calc_motif_dist(tn_signal_gr, motif_pos_gr, range = 200)
+calc_motif_dist(signal_gr, motif_pos_gr, range = 200)
 }
 \arguments{
-\item{tn_signal_gr}{A GRanges object with tn5 insertions. See the read_atac_bam_tn function.}
+\item{signal_gr}{A GRanges object with tn5 insertions. See the read_atac_bam_tn function.}
 
 \item{motif_pos_gr}{A GRanges object with the positions of the PWM in ATAC-seq peaks.}
 
