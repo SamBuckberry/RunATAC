@@ -1,3 +1,9 @@
+---
+    title: "RunATAC"
+    author: "Sam Buckberry"
+    date: "`r format(Sys.Date())`"
+    output: github_document
+---
 
 RunATAC
 ---
