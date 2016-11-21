@@ -40,6 +40,7 @@ plot_v <- function(frags_gr, motif_pos_gr, x_range=c(-250, 250),
         # plot the data
         gg <- ggplot2::ggplot(df, aes(x = distance, y = frag_size)) +        
                 geom_point(...) +
+                #stat_binhex() +
                 scale_x_continuous(expand = c(0, 0)) + 
                 scale_y_continuous(expand = c(0, 0)) +
                 xlab("Relative distance (bp)") +
