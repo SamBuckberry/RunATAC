@@ -4,12 +4,20 @@
 \alias{read_atac_frags}
 \title{Read BAM file aligned fragments into GRanges object}
 \usage{
-read_atac_frags(bam_file, max_insert = 2000)
+read_atac_frags(bam_file, max_insert = 2000, mapq = 20, yieldSize = 1e+06,
+  ...)
 }
 \arguments{
 \item{bam_file}{Path to a BAM formatted file.}
 
 \item{max_insert}{Maximum insert size allowed. Default is reccomended.}
+
+\item{mapq}{The minimum MAPQ alignment score for importing reads.}
+
+\item{yieldSize}{The number of reads retreived from the BAM file in each chunk.
+See ?BamFile in Rsamtools.}
+
+\item{...}{Arguments passed to ScanBamParam.}
 }
 \value{
 A GRanges object of aligned fragments

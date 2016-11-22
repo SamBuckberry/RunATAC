@@ -11,10 +11,21 @@
 read_atac_frags <- function(bam_file, max_insert=2000, mapq=20, yieldSize=1e6, ...){
         
         # Check inputs
-        if (class(max_insert) != "numeric") {
-                stop("max_insert_size is not numeric!")
+        if (class(bam_file) != "character" | length(bam_file) !=1) {
+                stop("bam_file is not a character of length 1!")
         }
         
+        if (class(max_insert) != "numeric" | length(max_insert) !=1) {
+                stop("max_insert_size is not a numeric of length 1!")
+        }
+        
+        if (class(mapq) != "numeric" | length(mapq) != 1) {
+                stop("mapq is not a numeric of length 1!")
+        }
+        
+        if (class(yieldSize) != "numeric" | length(yieldSize) != 1) {
+                stop("yieldSize is not a numeric of length 1!")
+        }
         
         # Allow the setting of parameters for Bam file scan such as Which regions
         param <- Rsamtools::ScanBamParam(mapqFilter = mapq, ...)
