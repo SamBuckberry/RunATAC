@@ -51,8 +51,8 @@ plot_v <- function(frags_gr, motif_pos_gr, flank=250,
         gg <- ggplot2::ggplot(df, aes(x = distance, y = frag_size)) +        
                 geom_point(...) +
                 #stat_binhex() +
-                scale_x_continuous(expand = c(0.1, 0.1)) + 
-                scale_y_continuous(expand = c(0.1, 0.1)) +
+                scale_x_continuous(expand = c(0, 0)) + 
+                scale_y_continuous(expand = c(0, 0)) +
                 xlab("Distance from motif") +
                 ylab("Fragment length") +
                 theme_bw() +
