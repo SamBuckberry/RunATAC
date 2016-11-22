@@ -2,6 +2,10 @@
 #' 
 #' @param bam_file Path to a BAM formatted file.
 #' @param max_insert Maximum insert size allowed. Default is reccomended.
+#' @param mapq The minimum MAPQ alignment score for importing reads.
+#' @param yieldSize The number of reads retreived from the BAM file in each chunk.
+#' See ?BamFile in Rsamtools.
+#' @param ... Arguments passed to ScanBamParam. 
 #' @return A GRanges object of aligned fragments
 #' @export
 read_atac_frags <- function(bam_file, max_insert=2000, mapq=20, yieldSize=1e6, ...){
