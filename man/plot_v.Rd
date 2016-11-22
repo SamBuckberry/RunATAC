@@ -4,7 +4,7 @@
 \alias{plot_v}
 \title{Calculate distances of Tn5 insertions from motif.}
 \usage{
-plot_v(frags_gr, motif_pos_gr, x_range = c(-250, 250), max_frag = 300, ...)
+plot_v(frags_gr, motif_pos_gr, flank = 250, max_frag = 300, ...)
 }
 \arguments{
 \item{frags_gr}{A GRanges object with ATAC-seq fragments.
@@ -13,7 +13,7 @@ See the read_atac_frags function.}
 \item{motif_pos_gr}{A GRanges object with the positions of the PWM in ATAC-seq peaks.
 See the motif_gr function.}
 
-\item{x_range}{Numeric of length 2. The range of data to include on the x axis.}
+\item{flank}{Numeric of length 1. Number of bases flanking motif to plot.}
 
 \item{max_frag}{Integer of length 1. The maximum fragment size to include in plot.}
 

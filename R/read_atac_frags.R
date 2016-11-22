@@ -2,13 +2,12 @@
 #' 
 #' @param bam_file Path to a BAM formatted file.
 #' @param max_insert Maximum insert size allowed. Default is reccomended.
-#' @param mapq The minimum MAPQ alignment score for importing reads.
 #' @param yieldSize The number of reads retreived from the BAM file in each chunk.
 #' See ?BamFile in Rsamtools.
 #' @param ... Arguments passed to ScanBamParam. 
 #' @return A GRanges object of aligned fragments
 #' @export
-read_atac_frags <- function(bam_file, max_insert=2000, mapq=20, yieldSize=1e6, ...){
+read_atac_frags <- function(bam_file, max_insert=2000, yieldSize=1e6, ...){
         
         # Check inputs
         if (class(bam_file) != "character" | length(bam_file) !=1) {
@@ -28,7 +27,7 @@ read_atac_frags <- function(bam_file, max_insert=2000, mapq=20, yieldSize=1e6, .
         }
         
         # Allow the setting of parameters for Bam file scan such as Which regions
-        param <- Rsamtools::ScanBamParam(mapqFilter = mapq, ...)
+        param <- Rsamtools::ScanBamParam(flag = scanBamFlag(isProperPair=TRUE), ...)
         
         message("Processing BAM file. This this may take a while for large files...")
         message("If you have lots of RAM, increase yieldSize to speed things up.")
@@ -38,7 +37,7 @@ read_atac_frags <- function(bam_file, max_insert=2000, mapq=20, yieldSize=1e6, .
         open(bf)
         gr <- NULL
         repeat {
-                chunk <- GenomicAlignments::readGAlignmentPairs(bf)
+                chunk <- GenomicAlignments::readGAlignmentPairs(bf, param=param)
                 if (length(chunk) == 0L)
                         break
                 chunk_gr <- GenomicRanges::GRanges(chunk)
