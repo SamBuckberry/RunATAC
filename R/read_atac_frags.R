@@ -6,6 +6,9 @@
 #' See ?BamFile in Rsamtools.
 #' @param ... Arguments passed to ScanBamParam. 
 #' @return A GRanges object of aligned fragments
+#' @import Rsamtools
+#' @import GenomicAlignments
+#' @import GenomicRanges
 #' @export
 read_atac_frags <- function(bam_file, max_insert=2000, yieldSize=1e6, ...){
         
@@ -16,10 +19,6 @@ read_atac_frags <- function(bam_file, max_insert=2000, yieldSize=1e6, ...){
         
         if (class(max_insert) != "numeric" | length(max_insert) !=1) {
                 stop("max_insert_size is not a numeric of length 1!")
-        }
-        
-        if (class(mapq) != "numeric" | length(mapq) != 1) {
-                stop("mapq is not a numeric of length 1!")
         }
         
         if (class(yieldSize) != "numeric" | length(yieldSize) != 1) {
