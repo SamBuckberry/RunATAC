@@ -5,6 +5,7 @@
 #' @param range The distance from the centre of gr to flank. Default=100. 
 #' @param log Logical. Is the signal in the bigwig file in log space? Default=FALSE.
 #' If log = TRUE, the scores in the bigwig file are transformed by e^scores.
+#' @param aggregate Logical. Should data for each position be added to get an aggregate score?
 #' @return A numeric vector of aggregate signal if aggregate = TRUE, which is the default. 
 #' If aggregate = FALSE a data.frame of signal of all regions is returned.
 #' @export
@@ -38,6 +39,10 @@ range_summary <- function(bigwig, gr, range=100, log=FALSE, aggregate=FALSE){
         
         # Drop the group_name
         scores$group_name <- NULL
+        
+        # Hack to get R CMD Check to pass
+        position <- NULL
+        value <- NULL
         
         # Reformat data into matrix
         scores <- tidyr::spread(scores, key = position, value = value)

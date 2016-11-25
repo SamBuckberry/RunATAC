@@ -14,9 +14,12 @@ bam_to_centres_bw(bam_file, file, max_insert = 2000, nuc_range = c(189,
 
 \item{max_insert}{The Maximum insert size for read fragments.}
 
-\item{nuc_range}{The nucleosome spaning fragment size range.
-#' @param scale_cpm Logical. Should the output be scaled to number of 
+\item{nuc_range}{The nucleosome spaning fragment size range.}
+
+\item{scale_cpm}{Logical. Should the output be scaled to number of 
 million mapped reads?}
+
+\item{...}{Arguments for readGAlignmentPairs.}
 }
 \value{
 No object is returned. A file is written.

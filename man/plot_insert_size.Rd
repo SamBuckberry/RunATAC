@@ -8,6 +8,8 @@ plot_insert_size(frag_gr, ...)
 }
 \arguments{
 \item{frag_gr}{A GRanges object of ATAC-seq fragments}
+
+\item{...}{Arguments for graphics::hist}
 }
 \value{
 A plot to the current graphics device

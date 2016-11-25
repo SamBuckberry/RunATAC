@@ -19,6 +19,9 @@ Imports:
     IRanges,
     GenomicAlignments,
     rtracklayer,
-    Rsamtools
+    Rsamtools,
+    tidyr,
+    ggplot2,
+    BSgenome
 RoxygenNote: 5.0.1
 Suggests: testthat

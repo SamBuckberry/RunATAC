@@ -17,6 +17,8 @@ See ?BamFile}
 
 \item{scale_cpm}{Logical. Should the output be scaled to number of 
 million mapped reads?}
+
+\item{...}{Arguments for ScanBamParam.}
 }
 \value{
 No object is returned. A file is written.

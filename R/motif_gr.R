@@ -8,6 +8,7 @@
 #' @importFrom magrittr %>%
 #' @import GenomicRanges
 #' @import IRanges
+#' @import BSgenome
 #' @export
 motif_gr <- function(gr, pwm, genome, min.score="85%"){
         
@@ -34,7 +35,7 @@ motif_gr <- function(gr, pwm, genome, min.score="85%"){
                                                          min.score = min.score) %>% start()
                 
                 
-                motif_starts_neg <- Biostrings::matchPWM(pwm = reverseComplement(pwm),
+                motif_starts_neg <- Biostrings::matchPWM(pwm = Biostrings::reverseComplement(pwm),
                                                          subject = sequences[[x]],
                                                          min.score = min.score) %>% start()
                 

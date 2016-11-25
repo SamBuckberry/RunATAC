@@ -15,7 +15,11 @@ See atac_motif_dist function.}
 
 \item{scale_to_lib}{Should plot be scaled to library size?. Logical.}
 
-\item{libsize}{The ATAC-seq library size for normalising signal to tn5 intergration events per million}
+\item{libsize}{The ATAC-seq library size for normalising signal to tn5 intergration events per million.}
+
+\item{xlab}{Character. X axis label.}
+
+\item{ylab}{Character. Y axis label.}
 
 \item{...}{Optional arguments passed to plot function.}
 }

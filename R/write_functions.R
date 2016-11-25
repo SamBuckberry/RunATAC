@@ -62,7 +62,7 @@ write_gr_bed <- function(gr, file, score="0", name="."){
         dat$score <- score
         dat$name <- name
         dat <- dat[ ,c(1,2,3,6,5,4)]
-        write.table(dat, file = file, quote = FALSE,
+        utils::write.table(dat, file = file, quote = FALSE,
                     sep = "\t", row.names = FALSE, col.names = FALSE)
 }
 

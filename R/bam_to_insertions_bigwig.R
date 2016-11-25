@@ -6,6 +6,7 @@
 #' See ?BamFile
 #' @param scale_cpm Logical. Should the output be scaled to number of 
 #' million mapped reads?
+#' @param ... Arguments for ScanBamParam.
 #' @return No object is returned. A file is written. 
 #' @export
 bam_to_insertions_bw <- function(bam_file, file, yieldSize=1e6,

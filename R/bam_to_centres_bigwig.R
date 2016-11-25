@@ -4,8 +4,9 @@
 #' @param file Path for output bigwig file. Extension should be .bw or .bigwig.
 #' @param max_insert The Maximum insert size for read fragments.
 #' @param nuc_range The nucleosome spaning fragment size range.
-#' #' @param scale_cpm Logical. Should the output be scaled to number of 
+#' @param scale_cpm Logical. Should the output be scaled to number of 
 #' million mapped reads?
+#' @param ... Arguments for readGAlignmentPairs.
 #' @return No object is returned. A file is written. 
 #' @export
 bam_to_centres_bw <- function(bam_file, file, max_insert=2000,

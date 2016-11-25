@@ -15,6 +15,8 @@ range_summary(bigwig, gr, range = 100, log = FALSE, aggregate = FALSE)
 
 \item{log}{Logical. Is the signal in the bigwig file in log space? Default=FALSE.
 If log = TRUE, the scores in the bigwig file are transformed by e^scores.}
+
+\item{aggregate}{Logical. Should data for each position be added to get an aggregate score?}
 }
 \value{
 A numeric vector of aggregate signal if aggregate = TRUE, which is the default. 

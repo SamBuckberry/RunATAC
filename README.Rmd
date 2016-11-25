@@ -16,11 +16,17 @@ knitr::opts_chunk$set(echo = TRUE, cache = FALSE, results = "hide",
                       comment = FALSE, warning = FALSE, message=FALSE)
 ```
 
-
-### Install and load the package
+### Install the RunATAC package and dependencies
 ```{r, eval=FALSE}
 library(devtools)
 devtools::install_github("SamBuckberry/RunATAC")
+
+install.packages('data.table')
+install.packages('magrittr')
+
+## try http:// if https:// URLs are not supported
+source("https://bioconductor.org/biocLite.R")
+biocLite(c("Biostrings", "motifRG", "GenomicRanges", "IRanges", "GenomicAlignments", "rtracklayer", "Rsamtools"))
 ```
 
 ### Plot ATAC-seq insert size histogram
@@ -33,7 +39,6 @@ frags <- read_atac_frags(bam_file = bam_fl)
 ```
 
 Plot the insert size distribution. 
-
 ```{r, fig.height=3, fig.width=5}
 plot_insert_size(frags, xlim=c(0,600))
 ```
@@ -44,10 +49,6 @@ bam_to_insertions_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.ins.bigwig")
 bam_to_centres_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.nuc.bigwig")
 ```
 
-### Calculate proportion of reads mapped to mitochondrial genome
-```{r}
-
-```
 
 ### Calculate the fraction of Tn5 insetions in peaks (FrIP)
 
@@ -66,10 +67,7 @@ peaks
 
 Calculate the fraction of reads in peaks
 ```{r}
-library(GenomicRanges)
-olaps <- overlapsAny(query = ins, subject = peaks)
-FrIP <- sum(olaps) / length(ins)
-FrIP
+calc_frip(signal = ins, peaks = peaks)
 ```
 
 
@@ -84,12 +82,13 @@ In this example, we will plot the Tn5 insertion signal around CTCF motifs in ATA
 
 Get the REB1 motif from the JASPAR database.
 ```{r, message=FALSE, comment=FALSE}
-#source("https://bioconductor.org/biocLite.R")
-#biocLite("BSgenome.Scerevisiae.UCSC.sacCer3")
+source("https://bioconductor.org/biocLite.R")
+biocLite(c("BSgenome.Scerevisiae.UCSC.sacCer3", "JASPAR2016", "TFBSTools"))
+
 library(BSgenome.Scerevisiae.UCSC.sacCer3)
 library(JASPAR2016)
 library(TFBSTools)
-library(magrittr)
+
 reb1 <- getMatrixByName(JASPAR2016, name=c("REB1"))
 reb1 <- reb1@profileMatrix
 ```

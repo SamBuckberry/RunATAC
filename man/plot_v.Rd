@@ -4,23 +4,19 @@
 \alias{plot_v}
 \title{Calculate distances of Tn5 insertions from motif.}
 \usage{
-plot_v(frags_gr, motif_pos_gr, flank = 250, max_frag = 300, ...)
+plot_v(df, size = 1, alpha = 0.01, ...)
 }
 \arguments{
-\item{frags_gr}{A GRanges object with ATAC-seq fragments.
-See the read_atac_frags function.}
+\item{df}{A data.frame returned from funciton calc_v.}
 
-\item{motif_pos_gr}{A GRanges object with the positions of the PWM in ATAC-seq peaks.
-See the motif_gr function.}
+\item{size}{Numeric. Point size.}
 
-\item{flank}{Numeric of length 1. Number of bases flanking motif to plot.}
+\item{alpha}{Numeric value between 0 and 1. Point transparency.}
 
-\item{max_frag}{Integer of length 1. The maximum fragment size to include in plot.}
-
-\item{...}{arguments passed to ggplot::geom_point}
+\item{...}{Arguments for geom_point in ggplot.}
 }
 \value{
-An object of class 'ggplot'
+An object of class 'ggplot'.
 }
 \description{
 Calculate distances of Tn5 insertions from motif.
