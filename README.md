@@ -1,7 +1,7 @@
 RunATAC
 ================
 Sam Buckberry
-2016-11-21
+2016-11-28
 
 RunATAC
 -------
@@ -11,11 +11,18 @@ An R package for processing and plotting ATAC-seq data
 
 This package is currently is it's infantcy. Don't expect any real functionality for a while...
 
-### Install and load the package
+### Install the RunATAC package and dependencies
 
 ``` r
 library(devtools)
 devtools::install_github("SamBuckberry/RunATAC")
+
+install.packages('data.table')
+install.packages('magrittr')
+
+## try http:// if https:// URLs are not supported
+source("https://bioconductor.org/biocLite.R")
+biocLite(c("Biostrings", "motifRG", "GenomicRanges", "IRanges", "GenomicAlignments", "rtracklayer", "Rsamtools"))
 ```
 
 ### Plot ATAC-seq insert size histogram
@@ -43,8 +50,6 @@ bam_to_insertions_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.ins.bigwig")
 bam_to_centres_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.nuc.bigwig")
 ```
 
-### Calculate proportion of reads mapped to mitochondrial genome
-
 ### Calculate the fraction of Tn5 insetions in peaks (FrIP)
 
 Get the Tn5 insertion points from BAM file into GRanges object
@@ -65,13 +70,38 @@ peaks
 Calculate the fraction of reads in peaks
 
 ``` r
-library(GenomicRanges)
-olaps <- overlapsAny(query = ins, subject = peaks)
-FrIP <- sum(olaps) / length(ins)
-FrIP
+calc_frip(signal = ins, peaks = peaks)
 ```
 
 ### Generate a read counts table for peaks
+
+``` r
+library(GenomicAlignments)
+library(stringr)
+olap_counts <- summarizeOverlaps(features = peaks, reads = ins)
+olap_counts <- assays(olap_counts)$counts
+rownames(olap_counts) <- str_c(seqnames(peaks), start(peaks), sep = ":") %>% 
+        str_c(end(peaks), sep = "-")
+```
+
+### Calculate di-nucleotide insertion frequency
+
+``` r
+library(BSgenome.Scerevisiae.UCSC.sacCer3)
+
+dinuc_freq <- calc_dinuc_freq(ins_gr = ins, genome = Scerevisiae)
+barplot(dinuc_freq$percentage, names=dinuc_freq$dinucleotide)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-9-1.png)
+
+### Generate tn5 insertion PWM
+
+``` r
+#calc_ins_pwm <- function()
+```
+
+### Calculate genome-wide Tn5 insertion bias bigwig
 
 ### Plotting ATAC-seq footprints
 
@@ -81,11 +111,10 @@ Get the REB1 motif from the JASPAR database.
 
 ``` r
 #source("https://bioconductor.org/biocLite.R")
-#biocLite("BSgenome.Scerevisiae.UCSC.sacCer3")
-library(BSgenome.Scerevisiae.UCSC.sacCer3)
+#biocLite(c("BSgenome.Scerevisiae.UCSC.sacCer3", "JASPAR2016", "TFBSTools"))
 library(JASPAR2016)
 library(TFBSTools)
-library(magrittr)
+
 reb1 <- getMatrixByName(JASPAR2016, name=c("REB1"))
 reb1 <- reb1@profileMatrix
 ```
@@ -132,9 +161,10 @@ gg
 Generate V-plot for motif regions
 
 ``` r
-plot_v(frags, motif_pos, alpha = 0.01)
+v_dat <- calc_v(frags_gr = frags, motif_pos_gr = motif_pos,
+                flank = 200, max_frag = 600)
+
+plot_v(df = v_dat)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-13-1.png)
-
-Calculate bias track
+![](README_files/figure-markdown_github/unnamed-chunk-15-1.png)

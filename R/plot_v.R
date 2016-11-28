@@ -9,7 +9,7 @@
 #' @export
 plot_v <- function(df, size=1, alpha=0.01, ...){
         # plot the data
-        gg <- ggplot2::ggplot(df, aes(x = df[ ,1], y = df[ ,2])) +        
+        gg <- ggplot2::ggplot(df, aes(x = df[ ,2], y = df[ ,1])) +        
                 geom_point(alpha=alpha, size=size, ...) +
                 scale_x_continuous(expand = c(0, 0)) + 
                 scale_y_continuous(expand = c(0, 0)) +
