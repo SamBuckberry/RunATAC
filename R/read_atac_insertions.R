@@ -37,11 +37,11 @@ read_atac_insertions <- function(bam_file, yieldSize=1e6, ...){
         # Offset the reads to correspond to tn5 insertion site
         pos <- gr[strand(gr) == "+"] %>% 
                 GenomicRanges::shift(shift=4) %>%
-                GenomicRanges::resize(width = 2, fix = "start")
+                GenomicRanges::resize(width = 1, fix = "start")
         
         neg <- gr[strand(gr) == "-"] %>%
                 GenomicRanges::shift(shift = -5) %>%
-                GenomicRanges::resize(width = 2, fix = "start")
+                GenomicRanges::resize(width = 1, fix = "start")
         
         # Return the pos and neg strands together
         gr <- c(pos, neg)
