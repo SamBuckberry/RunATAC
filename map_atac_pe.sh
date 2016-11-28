@@ -28,8 +28,10 @@ overwrite=true
 # SAM to BAM
 sambamba_v0.6.3 view -f bam -S "$prefix".sam -o "$prefix".bam
 
+# Sort the BAM
 sambamba_v0.6.3 sort "$prefix".bam -o "$prefix".sorted.bam
 
+# Remove the PCR duplicates
 sambamba_v0.6.3 markdup -r -t "$cores" "$prefix".sorted.bam "$prefix".dedup.bam  
 
 # Remove the tmp files

@@ -73,8 +73,11 @@ calc_frip(signal = ins, peaks = peaks)
 
 ### Generate a read counts table for peaks
 ```{r}
-
+olap_counts <- summarizeOverlaps(features = peaks, )
 ```
+
+###
+
 
 ### Plotting ATAC-seq footprints
 
