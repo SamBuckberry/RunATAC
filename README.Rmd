@@ -82,9 +82,10 @@ rownames(olap_counts) <- str_c(seqnames(peaks), start(peaks), sep = ":") %>%
 
 ```
 
-### Calculate di-nucleotide insertion bias
+### Calculate di-nucleotide insertion frequency
 ```{r}
-
+dinuc_freq <- calc_dinuc_freq(ins_gr = ins, genome = Scerevisiae)
+barplot(dinuc_freq$percentage, names=dinuc_freq$dinucleotide)
 ```
 
 
