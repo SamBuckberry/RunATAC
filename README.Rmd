@@ -73,10 +73,31 @@ calc_frip(signal = ins, peaks = peaks)
 
 ### Generate a read counts table for peaks
 ```{r}
-olap_counts <- summarizeOverlaps(features = peaks, )
+library(GenomicAlignments)
+library(stringr)
+olap_counts <- summarizeOverlaps(features = peaks, reads = ins)
+olap_counts <- assays(olap_counts)$counts
+rownames(olap_counts) <- str_c(seqnames(peaks), start(peaks), sep = ":") %>% 
+        str_c(end(peaks), sep = "-")
+
 ```
 
-###
+### Calculate di-nucleotide insertion bias
+```{r}
+
+```
+
+
+### Generate tn5 insertion PWM
+```{r}
+
+```
+
+
+### Calculate genome-wide Tn5 insertion bias bigwig
+```{r}
+
+```
 
 
 ### Plotting ATAC-seq footprints
@@ -136,11 +157,5 @@ gg
 Generate V-plot for motif regions
 ```{r, fig.height=4, fig.width=4.5}
 plot_v(frags, motif_pos, alpha = 0.01)
-```
-
-
-Calculate bias track
-```{r}
-
 ```
 
