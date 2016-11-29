@@ -22,6 +22,8 @@ Imports:
     Rsamtools,
     tidyr,
     ggplot2,
-    BSgenome
+    BSgenome,
+    GenomeInfoDb,
+    methods
 RoxygenNote: 5.0.1
 Suggests: testthat

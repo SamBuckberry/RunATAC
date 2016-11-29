@@ -4,16 +4,13 @@
 \alias{calc_ins_pwm}
 \title{Calculate the PWM for Tn5 insertions.}
 \usage{
-calc_ins_pwm(ins_gr, genome, seq_width = 10, ...)
+calc_ins_pwm(ins_gr, genome, ...)
 }
 \arguments{
 \item{ins_gr}{A GRanges object. 
 Typically of ATAC-seq Tn5 insertions generated with the function read_atac_insertions.}
 
 \item{genome}{A BSgenome object.}
-
-\item{seq_width}{The length of the DNA string centered on the Tn5 insertion 
-site for calculating the PWM.}
 
 \item{...}{Parameters for the PWM function in the Biostrings package.}
 }

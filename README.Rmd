@@ -70,7 +70,6 @@ Calculate the fraction of reads in peaks
 calc_frip(signal = ins, peaks = peaks)
 ```
 
-
 ### Generate a read counts table for peaks
 ```{r}
 library(GenomicAlignments)
@@ -83,7 +82,7 @@ rownames(olap_counts) <- str_c(seqnames(peaks), start(peaks), sep = ":") %>%
 ```
 
 ### Calculate di-nucleotide insertion frequency
-```{r}
+```{r, fig.width=10, fig.height=7}
 
 library(BSgenome.Scerevisiae.UCSC.sacCer3)
 
@@ -91,11 +90,15 @@ dinuc_freq <- calc_dinuc_freq(ins_gr = ins, genome = Scerevisiae)
 barplot(dinuc_freq$percentage, names=dinuc_freq$dinucleotide)
 ```
 
-
 ### Generate tn5 insertion PWM
+Tn5 has a ~21 bp sequence preference (Buenrostro *et. al.* 2013, *Nat. Methods*). Here we construct a 21 bp positional weight matrix (PWM) for the Tn5 insertion postions and the flanking 10 bases.   
 ```{r}
-ins_pwm <- calc_ins_pwm(ins_gr = ins, genome = Scerevisiae, seq_width = 40)
 
+ins_pwm <- calc_ins_pwm(ins_gr = ins, genome = Scerevisiae)
+```
+
+
+```{r}
 library(reshape2)
 library(ggplot2)
 
@@ -107,44 +110,16 @@ gg
 ```
 
 
-### Calculate genome-wide Tn5 insertion bias bigwig
+### Calculate Tn5 insertion bias
 ```{r}
-regions_gr <- peaks
-genome <- Scerevisiae
-
-calc_ins_bias <- function(ins_pwm, regions_gr, genome){
-        
-        # Pad the end of the ranges with sequence for PWM scores 
-        regions_pad <- regions_gr
-        strand(regions_pad) <- "*"
-        end(regions_pad) <- end(regions_pad) + ncol(ins_pwm)
-        
-        # Get the sequences for the regions of interest
-        region_seq <-  BSgenome::getSeq(x = genome, regions_pad)
-        
-        
-        
-        calc_seq_pwm_score <- function(x){
-                
-                dna <- region_seq[[x]]
-                pwm_score <- Biostrings::PWMscoreStartingAt(pwm = ins_pwm,
-                                                            subject = dna,
-                                                            starting.at = 1:(length(dna)-ncol(ins_pwm)))
-        }
-        
-        scores <- lapply(1:length(region_seq), FUN = calc_seq_pwm_score)
-        
-        return(scores)
-}
-
-
-
+ins_bias <- calc_ins_bias(ins_pwm = ins_pwm, regions_gr = peaks,
+                          genome = Scerevisiae)
 ```
 
 
 ### Plotting ATAC-seq footprints
 
-In this example, we will plot the Tn5 insertion signal around CTCF motifs in ATAC-seq peaks using a positional weight matrix (PWM).
+In this example, we will plot the Tn5 insertion signal around REB1 motifs in ATAC-seq peaks using a positional weight matrix (PWM).
 
 Get the REB1 motif from the JASPAR database.
 ```{r, message=FALSE, comment=FALSE}
@@ -153,7 +128,7 @@ Get the REB1 motif from the JASPAR database.
 library(JASPAR2016)
 library(TFBSTools)
 
-reb1 <- getMatrixByName(JASPAR2016, name=c("REB1"))
+reb1 <- getMatrixByName(JASPAR2016, name=c("CBF1"))
 reb1 <- reb1@profileMatrix
 ```
 
@@ -163,10 +138,48 @@ motif_pos <- motif_gr(gr = peaks, pwm = reb1, genome = Scerevisiae)
 motif_pos
 ```
 
-Get the insertion data for the motif regions
+Get the insertion data for the motif regions.
 ```{r, fig.height=4, fig.width=4.5, eval=FALSE}
 ins_bw <- system.file("extdata", "chrIV.ins.bigwig", package = "RunATAC")
 dat <- range_summary(bigwig = ins_bw, gr = motif_pos)
+
+
+gr <- motif_pos
+ins_bigwig <- ins_bw
+genome <- Scerevisiae
+
+calc_footprint <- function(ins_bigwig, gr, ins_pwm, genome, flank=100){
+        
+        # Get the insertion data for the GRanges
+        dat <- RunATAC::range_summary(bigwig = ins_bigwig, gr = gr, range = flank)
+
+        # Calculate the insertion bias for regions
+        regions_gr <- GenomicRanges::resize(gr, width = flank+(flank+1), 
+                                           fix = 'center')
+        
+        bias <- RunATAC::calc_ins_bias(ins_pwm = ins_pwm,
+                              regions_gr = regions_gr,
+                              genome = genome)        
+        
+        bias <- do.call(rbind, bias)
+
+        # undo the log2 transform
+        bias <- exp(bias)
+        
+        # Calculate insertions / bias
+        ins_over_bias <- dat / bias        
+ 
+        # data for plotting
+        xdat <- -flank:flank
+         
+        ins_y <- colSums(dat)
+        bias_y <- colSums(2^bias)
+        norm_y <- ins_y / bias_y
+
+       
+        
+}
+
 
 library(reshape2)
 library(dplyr)

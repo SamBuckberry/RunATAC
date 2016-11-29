@@ -9,7 +9,7 @@
 calc_dinuc_freq <- function(ins_gr, genome){
         
         # Get the insertion base and preceeding base for dinucleotide frequency
-        di_ins <- GenomicRanges::resize(x = ins, width = 2, fix = "center")
+        di_ins <- GenomicRanges::resize(x = ins_gr, width = 2, fix = "center")
         
         # Get the dinucleotides
         ins_seq <- BSgenome::getSeq(x = genome, di_ins)

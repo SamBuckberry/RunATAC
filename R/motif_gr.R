@@ -56,6 +56,7 @@ motif_gr <- function(gr, pwm, genome, min.score="85%"){
         }
         
         # Apply the function across all sequences
+        message("Searching for motif matches...")
         motif_ranges <- lapply(X = 1:length(sequences), FUN = find_motif_start)
         
         # Remove the NULLs from where no motif was detected

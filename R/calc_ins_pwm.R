@@ -3,16 +3,16 @@
 #' @param ins_gr A GRanges object. 
 #' Typically of ATAC-seq Tn5 insertions generated with the function read_atac_insertions. 
 #' @param genome A BSgenome object.
-#' @param seq_width The length of the DNA string centered on the Tn5 insertion 
-#' site for calculating the PWM. 
 #' @param ... Parameters for the PWM function in the Biostrings package.
 #' @return A PWM matirix containing dinucleotide counts and precentages.
 #' @export
-
-calc_ins_pwm <- function(ins_gr, genome, seq_width=10, ...){
+calc_ins_pwm <- function(ins_gr, genome, ...){
+        
+        # Set width of 21bp 
+        seq_width=21
         
         # Remove out-of-bounds ranges
-        genome_ranges <- as(GenomeInfoDb::seqinfo(genome), "GRanges")
+        genome_ranges <- methods::as(GenomeInfoDb::seqinfo(genome), "GRanges")
         start(genome_ranges) <- start(genome_ranges) + seq_width
         end(genome_ranges) <- end(genome_ranges) - seq_width
         
