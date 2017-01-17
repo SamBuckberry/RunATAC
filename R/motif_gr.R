@@ -10,7 +10,7 @@
 #' @import IRanges
 #' @import BSgenome
 #' @export
-motif_gr <- function(gr, pwm, genome, min.score="85%"){
+motif_gr <- function(gr, pwm, genome, min.score="80%"){
         
         if(class(gr) != "GRanges"){
                 stop("Object gr is not of class GRanges.")
@@ -65,6 +65,24 @@ motif_gr <- function(gr, pwm, genome, min.score="85%"){
         
         # Convert to Granges object
         motif_ranges <- motif_ranges[!no_keep] %>% unlist() %>% GRangesList() %>% unlist()
+        
+        # Get the PWM alignment scores and add to GRanges
+        match_seqs <- BSgenome::getSeq(x = genome, names=motif_ranges)
+        
+        get_scores <- function(x){
+                score_pos <- PWMscoreStartingAt(pwm = pwm,
+                                                subject = as.character(match_seqs[x]))
+                score_neg <- PWMscoreStartingAt(pwm = pwm,
+                                                subject = as.character(reverseComplement(
+                                                        match_seqs[x])))
+                score <- max(score_pos, score_neg)
+                return(score)
+        }
+        
+        message("Calculating PWM match scores...")
+        match_scores <- lapply(1:length(match_seqs), get_scores)
+        motif_ranges$score <- match_scores
+        
         
         # Decrease the width to motif centre
         motif_ranges <- resize(motif_ranges, width = 2, fix = 'center')
