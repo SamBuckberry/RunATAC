@@ -4,7 +4,7 @@
 \alias{motif_gr}
 \title{Get the positions of the PWM in ATAC-seq peaks.}
 \usage{
-motif_gr(gr, pwm, genome, min.score = "85\%")
+motif_gr(gr, pwm, genome, min.score = "80\%")
 }
 \arguments{
 \item{gr}{A GRanges object. Usually ranges of ATAC-seq peaks.}

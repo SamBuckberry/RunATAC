@@ -80,7 +80,10 @@ motif_gr <- function(gr, pwm, genome, min.score="80%"){
         }
         
         message("Calculating PWM match scores...")
-        match_scores <- lapply(1:length(match_seqs), get_scores)
+        match_scores <- lapply(1:length(match_seqs), get_scores) %>%
+                unlist()
+        
+
         motif_ranges$score <- match_scores
         
         
