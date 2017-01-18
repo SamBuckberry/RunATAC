@@ -17,3 +17,4 @@ plot_insert_size <- function(frag_gr, ...){
         graphics::hist(widths, xlab = "Insert size (bases)",
              breaks = 1000, ...)
 }
+
