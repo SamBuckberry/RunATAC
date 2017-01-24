@@ -1,4 +1,4 @@
-#' Write a bigwig file of Tn5 insertion depth
+#' Write a bigwig file of nucleosome-spanning fragment depth
 #' 
 #' @param bam_file Path to an ATAC-seq paired-end BAM file.
 #' @param file Path for output bigwig file. Extension should be .bw or .bigwig.
