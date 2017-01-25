@@ -11,11 +11,11 @@ calc_ins_bias <- function(ins_pwm, regions_gr, genome){
         
         # Check inputs
         if (ncol(ins_pwm) != 21) {
-                stop("PWM does not have 21 columns.")
+                stop("PWM does not have 21 columns")
         }
         
         if (nrow(ins_pwm) != 4) {
-                stop("PWM does not have 4 rows.")
+                stop("PWM does not have 4 rows")
         }
         
         # Pad the end of the ranges with sequence for PWM scores 
@@ -42,6 +42,8 @@ calc_ins_bias <- function(ins_pwm, regions_gr, genome){
         
         # Test if vectors of scores are of equal length to width of GRanges
         stopifnot(all(width(regions_gr) == lengths(scores)))
+        
+        
         
         return(scores)
 }

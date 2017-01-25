@@ -13,7 +13,7 @@ plot_insert_size <- function(frag_gr, ...){
         
         # Get the insert sizes
         widths <- width(frag_gr)
-        
+
         graphics::hist(widths, xlab = "Insert size (bases)",
              breaks = 1000, ...)
 }

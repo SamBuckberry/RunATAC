@@ -9,7 +9,26 @@ RunATAC
 ---
 ## An R package for processing and plotting ATAC-seq data
 
-This package is currently is it's infantcy. Don't expect any real functionality for a while...
+This package is currently is it's infancy. Don't expect any real functionality for a while...
+
+You can use RunATAC to easily
+* Plot insert size histograms 
+* Calculate fraction of reads in peaks (FrIP)
+* Plot footprint profiles for motifs 
+* Generate V-plots of fragment sizes flanking transcription factor motifs
+* Generate bigwig files of Tn5 insertions and nucleosome spanning fragments
+* Perform motif-centric transcription factor occupancy predictions with the CENTIPEDE algorithm
+* Generate tables of counts for multiple samples
+* Perform differential accessibility testing
+* Generate browser snapshots for regions of interest
+
+###TODO
+* Browser shots
+* Peak calling with MACS2 using generated bigwigs
+* Nucleosome density plot analogous to the footprint plot
+* Footprint and nucleosome together
+* Heat maps similar to deeptools
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache = FALSE, results = "hide",
@@ -30,8 +49,9 @@ biocLite(c("Biostrings", "motifRG", "GenomicRanges", "IRanges", "GenomicAlignmen
 ```
 
 ### Plot ATAC-seq insert size histogram
+One of the first quality control steps of an ATAC-seq experiment often performed is the assessment of insert size distribution. As Tn5 DNA insertions in accessible chromatin are highly structured around nucleosomes [Buenrostro et. al. 2013](http://www.nature.com/nmeth/journal/v10/n12/full/nmeth.2688.html), a good ATAC-seq experiment should show an enrichment of fragment widths (the mapping distance between 5' read ends for paired-end reads) below 100 bases, and another peak of enrichment at ~200 bases, indicative of nucleosome spanning read fragments.
 
-First, load a BAM file. Here we will use a BAM file included in the RunATAC package. This BAM is from ATAC-seq on Saccharomyces cerevisiae and includes data only from chrIV. 
+To inspect the insert sizes from aligned ATAC-seq reads, first load the fragment data into into a GRanges object using the `read_atac_frags()` function. Here we will use a BAM file included in the RunATAC package. This BAM is from ATAC-seq on Saccharomyces cerevisiae and includes data only from chrIV. 
 ```{r}
 library(RunATAC)
 bam_fl <- system.file("extdata", "chrIV.bam", package = "RunATAC")
@@ -43,34 +63,28 @@ Plot the insert size distribution.
 plot_insert_size(frags, xlim=c(0,600))
 ```
 
-### Generate a Tn5 insertion site and nucleosome bigwig files
-```{r, eval=FALSE}
-bam_to_insertions_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.ins.bigwig")
-bam_to_centres_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.nuc.bigwig")
-```
-
-
 ### Calculate the fraction of Tn5 insetions in peaks (FrIP)
+Another useful metric for evaluating the quality of an ATAC-seq experiment is the fraction of reads in peaks (FrIP), which can help you assess the ammount of background noise in the experiment. 
 
-Get the Tn5 insertion points from BAM file into GRanges object
+First, we load the Tn5 insertion points from BAM file into GRanges object
 ```{r}
 ins <- read_atac_insertions(bam_fl)
-ins
 ```
 
-Load the peak data in the MACS2 .narrowPeak format
+Then we load a file of peaks in the MACS2 .narrowPeak format, however you can generate peaks using any peak caller and load these into a GRanges object from a BED format file. 
 ```{r}
 peak_fl <- system.file("extdata", "chrIV_peaks.narrowPeak", package = "RunATAC")
 peaks <- read_bed(peak_fl)
-peaks
 ```
 
-Calculate the fraction of reads in peaks
+And now we calculate the fraction of reads in peaks
 ```{r}
 calc_frip(signal = ins, peaks = peaks)
 ```
 
 ### Generate a read counts table for peaks
+If the purpose of the ATAC-seq experiments is to perform differential accessibility testing, you would need to generate a table of read counts for each library.
+
 ```{r}
 library(GenomicAlignments)
 library(stringr)
@@ -81,20 +95,20 @@ rownames(olap_counts) <- str_c(seqnames(peaks), start(peaks), sep = ":") %>%
 
 ```
 
-### Calculate di-nucleotide insertion frequency
+### Calculate Tn5 insertion bias
+As Tn5 has has a sequence preference [Buenrostro et. al. 2013](http://www.nature.com/nmeth/journal/v10/n12/full/nmeth.2688.html) it can be useful to calculate a Position Weight Matrix (PWM) for sequence content ±10 bp from Tn5 insertion points, so insertion counts at each position can be bias corrected. 
+
+First, we can inspect the di-nucleotide insertion frequencies and see that there is a distinct depletion of insertions in CG dinucleotide context.
 ```{r, fig.width=10, fig.height=7}
-
 library(BSgenome.Scerevisiae.UCSC.sacCer3)
-
 dinuc_freq <- calc_dinuc_freq(ins_gr = ins, genome = Scerevisiae)
 barplot(dinuc_freq$percentage, names=dinuc_freq$dinucleotide)
 ```
 
-### Generate tn5 insertion PWM
-Tn5 has a ~21 bp sequence preference (Buenrostro *et. al.* 2013, *Nat. Methods*). Here we construct a 21 bp positional weight matrix (PWM) for the Tn5 insertion postions and the flanking 10 bases.   
+Now we construct a 21 bp positional weight matrix (PWM) for the Tn5 insertion positions and the flanking 10 bases.   
 ```{r}
-
 ins_pwm <- calc_ins_pwm(ins_gr = ins, genome = Scerevisiae)
+ins_pwm
 ```
 
 
@@ -110,12 +124,15 @@ gg
 ```
 
 
-### Calculate Tn5 insertion bias
-```{r}
-ins_bias <- calc_ins_bias(ins_pwm = ins_pwm, regions_gr = peaks,
-                          genome = Scerevisiae)
-```
+### Generate a Tn5 insertion site and nucleosome bigwig files
 
+As ATAC-seq data can provide information on both Tn5 accessible DNA and nucleosome positioning, it is useful to summarise the coverage depth of both insertions and fragment centres. For this purpose, the [bigwig file format](https://genome.ucsc.edu/goldenpath/help/bigWig.html) is very efficient for visualisation and fast data retrieval. 
+
+To convert BAM files to insertion point and fragment centre bigwig files:
+```{r, eval=FALSE}
+bam_to_insertions_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.ins.bigwig")
+bam_to_centres_bw(bam_file = bam_fl, file = "inst/extdata/chrIV.nuc.bigwig")
+```
 
 ### Plotting ATAC-seq footprints
 
@@ -127,23 +144,86 @@ Get the REB1 motif from the JASPAR database.
 #biocLite(c("BSgenome.Scerevisiae.UCSC.sacCer3", "JASPAR2016", "TFBSTools"))
 library(JASPAR2016)
 library(TFBSTools)
-
-reb1 <- getMatrixByName(JASPAR2016, name=c("CBF1"))
-reb1 <- reb1@profileMatrix
+getMatrixByID
+tf <- getMatrixByID(JASPAR2016, ID=c("MA0363.1"))
+tf <- tf@profileMatrix
 ```
 
 Get the positions of motif in peaks.
 ```{r}
-motif_pos <- motif_gr(gr = peaks, pwm = reb1, genome = Scerevisiae)
-motif_pos
+motif_pos <- motif_gr(gr = peaks, pwm = tf, genome = Scerevisiae)
 ```
 
-Get the insertion data for the motif regions.
-```{r, fig.height=4, fig.width=4.5, eval=FALSE}
+Get the insertion data for the motif regions, for this we retreivie the data from the bigwig file of Tn5 insertions. This will return a data.frame of insertions for the 100 bases flanking each side of the motif matches.
+```{r}
 ins_bw <- system.file("extdata", "chrIV.ins.bigwig", package = "RunATAC")
-dat <- range_summary(bigwig = ins_bw, gr = motif_pos)
+dat <- range_summary(bigwig = ins_bw, gr = motif_pos, range = 100)
+dat[1:6, 1:6]
+plot(colSums(dat), type='l')
+```
+
+Then Calculate Tn5 insertion bias for the same regions
+```{r}
+
+par(mfrow=c(2,1))
+plot(colSums(ins_bias), type='l')
+plot(colSums(dat), type='l')
+ins_over_bias <- dat+1 / ins_bias
+plot(colSums(ins_over_bias))
+lines(colSums(ins_bias))
+
+ins_bw <- system.file("extdata", "chrIV.ins.bigwig", package = "RunATAC")
+frag_bw <- system.file("extdata", "chrIV.nuc.bigwig", package = "RunATAC")
+gr <- motif_pos
+bias_pwm <- ins_pwm
+genome <- Scerevisiae
+range <- 200
+
+# Get fragment centres, tn5 insertions and insertion bias scores for regions flanking PWM matches in peaks.
+
+calc_motif_profile <- function(ins_bw, frag_bw, gr, ins_pwm, genome, range=100){
+        
+        # Get the range summary for Tn5 insertions
+        ins_dat <- range_summary(bigwig = ins_bw, gr = gr, range = range)
+        
+        # Get the range summary for the fragment centres
+        frag_dat <- range_summary(bigwig = frag_bw, gr = gr, range = range)
+        
+        # Calculate the bias scores
+        bias_dat <- calc_profile_bias(ins_pwm = ins_pwm, gr = gr,
+                              genome = genome, range = range)
+        
+        # Get data into list for export
+        dat <- list(ins_dat=ins_dat, frag_dat=frag_dat, bias_dat=bias_dat)
+        
+        return(dat)
+}
 
 
+profile_dat <- calc_motif_profile(ins_bw = ins_bw, frag_bw = frag_bw, gr = motif_pos,
+                                ins_pwm = ins_pwm, genome = Scerevisiae, range = 200) 
+
+
+plot_motif_profiles <- function(profile_dat){
+        
+        range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+        
+        ins_dat <- colSums(profile_dat[[1]]) %>% range01()
+        frag_dat <- colSums(profile_dat[[2]]) %>% range01()
+        bias_dat <- colSums(profile_dat[[3]]) %>% range01()
+        
+        plot(ins_dat)
+        plot(frag_dat)
+        
+}
+
+
+```
+
+
+
+
+```{r, fig.height=4, fig.width=4.5, eval=FALSE}
 gr <- motif_pos
 ins_bigwig <- ins_bw
 genome <- Scerevisiae
@@ -176,8 +256,6 @@ calc_footprint <- function(ins_bigwig, gr, ins_pwm, genome, flank=100){
         bias_y <- colSums(2^bias)
         norm_y <- ins_y / bias_y
 
-       
-        
 }
 
 
@@ -213,5 +291,24 @@ v_dat <- calc_v(frags_gr = frags, motif_pos_gr = motif_pos,
                 flank = 200, max_frag = 400)
 
 plot_v(df = v_dat)
+```
+
+Predict motifs with TF occupancy using the CENTIPEDE algorithm
+```{r}
+
+
+```
+
+
+### Plot Tn5 insertion density around transcription start sites (TSS) 
+```{r}
+library(GenomicFeatures)
+source("https://bioconductor.org/biocLite.R")
+biocLite("TxDb.Scerevisiae.UCSC.sacCer3.sgdGene")
+library(TxDb.Scerevisiae.UCSC.sacCer3.sgdGene)
+tss <- promoters(x = TxDb.Scerevisiae.UCSC.sacCer3.sgdGene, upstream = 1, downstream = 1)
+tss_profile <- range_summary(bigwig = ins_bw, gr = tss, aggregate = TRUE)
+plot(tss_profile, type='l')
+
 ```
 

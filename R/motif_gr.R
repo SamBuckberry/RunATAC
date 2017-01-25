@@ -26,6 +26,7 @@ motif_gr <- function(gr, pwm, genome, min.score="80%"){
         }
         
         # Get the nucleotide sequences
+        message("Retrieving sequences...")
         sequences <- BSgenome::getSeq(x = genome, names=gr)
         
         # Function to find motif in one sequence
