@@ -10,8 +10,7 @@ output:
 
 
 ### Plotting functions
-* Insert size histogram
-* V-plot heatmap
+* Browser shots
 * Nucleosome density plot analagous to the footprint plot
 * Footprint and nucleosome together
 * Heatmaps analagous to deeptools for TSS, Gene body, etc
